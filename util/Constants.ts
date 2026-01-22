@@ -17,7 +17,8 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '10:44 PM • 20 Dec',
     tags: ['#work'],
     isPinned: true,
-    isDeleted: true,
+    isFavorite: true,
+    isDeleted: false,
   },
   {
     id: '2',
@@ -27,7 +28,8 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '10:43 PM • 23 Dec',
     tags: ['#sport'],
     isPinned: false,
-    isDeleted: true,
+    isFavorite: true,
+    isDeleted: false,
   },
   {
     id: '3',
@@ -36,7 +38,8 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '10:42 PM • 23 Dec',
     tags: ['#sport'],
     isPinned: false,
-    isDeleted: true,
+    isFavorite: false,
+    isDeleted: false,
   },
   {
     id: '4',
@@ -45,7 +48,8 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '10:42 PM • 23 Dec',
     tags: ['#sport'],
     isPinned: false,
-    isDeleted: true,
+    isFavorite: false,
+    isDeleted: false,
   },
   {
     id: '5',
@@ -54,7 +58,8 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '10:42 PM • 23 Dec',
     tags: ['#sport'],
     isPinned: false,
-    isDeleted: true,
+    isFavorite: false,
+    isDeleted: false,
   },
   {
     id: '6',
@@ -63,6 +68,7 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '09:00 AM • 24 Dec',
     tags: ['#work'],
     isPinned: false,
+    isFavorite: false,
     isDeleted: false,
   },
   {
@@ -72,6 +78,7 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '06:30 PM • 24 Dec',
     tags: ['#personal'],
     isPinned: false,
+    isFavorite: false,
     isDeleted: false,
   }
 ];

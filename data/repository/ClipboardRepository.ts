@@ -20,6 +20,7 @@ class ClipboardRepository {
           switch (sortOption) {
             case 'CUSTOM':
               // Pinned first, then by internal list order
+              if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
               return this.items.indexOf(a) - this.items.indexOf(b);
             
             case 'DATE':
@@ -51,7 +52,7 @@ class ClipboardRepository {
 
   async getFavoriteItems(): Promise<ClipboardItem[]> {
     return new Promise((resolve) => {
-      setTimeout(() => resolve(this.items.filter(i => !i.isDeleted && i.isPinned)), 100);
+      setTimeout(() => resolve(this.items.filter(i => !i.isDeleted && i.isFavorite)), 100);
     });
   }
 
@@ -94,13 +95,13 @@ class ClipboardRepository {
 
   async unfavoriteItems(ids: string[]): Promise<void> {
     this.items = this.items.map(i => 
-      ids.includes(i.id) ? { ...i, isPinned: false } : i
+      ids.includes(i.id) ? { ...i, isFavorite: false } : i
     );
   }
 
   async favoriteItems(ids: string[]): Promise<void> {
       this.items = this.items.map(i => 
-        ids.includes(i.id) ? { ...i, isPinned: true } : i
+        ids.includes(i.id) ? { ...i, isFavorite: true } : i
       );
   }
 
@@ -127,6 +128,12 @@ class ClipboardRepository {
   async pinItem(id: string, isPinned: boolean): Promise<void> {
     this.items = this.items.map(i => 
       i.id === id ? { ...i, isPinned } : i
+    );
+  }
+
+  async toggleFavorite(id: string): Promise<void> {
+    this.items = this.items.map(i => 
+      i.id === id ? { ...i, isFavorite: !i.isFavorite } : i
     );
   }
 
@@ -158,6 +165,7 @@ class ClipboardRepository {
       timestamp: new Date().toLocaleString(),
       tags: ['#merged'],
       isPinned: false, 
+      isFavorite: false,
       isDeleted: false
     };
 

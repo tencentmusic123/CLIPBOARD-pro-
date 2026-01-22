@@ -15,6 +15,7 @@ export interface ClipboardItem {
   timestamp: string; // ISO string or formatted time string for this demo
   tags: string[];
   isPinned: boolean;
+  isFavorite: boolean;
   isDeleted?: boolean; // New flag for trash
   metadata?: {
     label?: string; // e.g. "Work", "Home"

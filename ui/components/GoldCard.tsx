@@ -129,7 +129,7 @@ const GoldCard: React.FC<GoldCardProps> = ({
 
   return (
     <div 
-        className={`relative mb-4 transition-transform active:scale-[0.99] select-none touch-pan-y ${isDraggable ? 'cursor-move' : 'cursor-pointer'}`}
+        className={`relative mb-6 transition-transform active:scale-[0.99] select-none touch-pan-y ${isDraggable ? 'cursor-move' : 'cursor-pointer'}`}
         draggable={isDraggable && !isSelectionMode}
         onDragStart={(e) => onDragStart && onDragStart(e, item)}
         onDragOver={onDragOver}
@@ -143,58 +143,67 @@ const GoldCard: React.FC<GoldCardProps> = ({
         onClick={handleClick}
         style={{ transform: `translateX(${swipeOffset}px)` }}
     >
-      {swipeOffset > 0 && (
-          <div className="absolute inset-y-0 left-0 w-full bg-red-900/50 rounded-3xl flex items-center pl-4 -z-10">
-              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
+      {/* Pinned Mark - Outside Top Left */}
+      {item.isPinned && !isSelectionMode && (
+          <div className="absolute -top-3 -left-1 z-20 transform -rotate-45">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16 12V4H17V2H7V4H8V12L6 14V16H11V22H13V16H18V14L16 12Z" fill="white"/>
+              </svg>
+          </div>
+      )}
+
+      {/* 3 Dots - Outside Right */}
+      {!isSelectionMode && (
+          <div 
+              onClick={(e) => { e.stopPropagation(); onMenuClick && onMenuClick(e, item); }}
+              className="absolute -right-8 top-1/2 -translate-y-1/2 p-2 cursor-pointer z-10"
+          >
+              <svg className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity" style={{ color: accentColor }} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
               </svg>
           </div>
       )}
 
       <div 
-        className={`border rounded-3xl p-4 relative group transition-colors ${cardBg}`}
+        className={`border rounded-3xl p-4 relative group transition-colors ${cardBg} min-h-[100px] flex flex-col justify-between`}
         style={{ borderColor: accentColor }}
       >
-        <div className="flex justify-between items-start">
-            <div className="flex-1 pr-4">
-                <p className={`font-mono text-sm leading-relaxed whitespace-pre-wrap break-words ${textColor}`}>
+        {/* Top Section */}
+        <div className="flex justify-between items-start relative">
+            <div className="flex-1 pr-8">
+                <p className={`font-mono text-sm leading-relaxed whitespace-pre-wrap break-words line-clamp-2 ${textColor}`}>
                     {renderContent()}
                 </p>
-                <div className="flex items-center mt-3 text-xs">
-                    {item.tags.map((tag) => (
-                    <span key={tag} className={`mr-3 ${tagColor}`}>{tag}</span>
-                    ))}
-                </div>
             </div>
             
-            <div className="flex flex-col items-end justify-between h-full">
-                {item.type !== ClipboardType.TEXT && (
-                    <svg className="w-6 h-6 mb-4" style={{ color: accentColor }} fill={item.type === ClipboardType.PHONE || item.type === ClipboardType.SECURE ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={item.type === ClipboardType.PHONE || item.type === ClipboardType.SECURE ? 0 : 2}>
-                        {getIcon(item.type)}
-                    </svg>
-                )}
-                {item.type === ClipboardType.TEXT && item.isPinned && (
-                    <svg className="w-5 h-5 text-red-600 mb-4" fill="currentColor" viewBox="0 0 24 24">
+            {/* Heart Icon - Top Right */}
+            {item.isFavorite && (
+                <div className="absolute top-0 right-0">
+                    <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                     </svg>
-                )}
-            </div>
+                </div>
+            )}
+
+            {/* Type Icon - Right Center (below heart) */}
+            {item.type !== ClipboardType.TEXT && (
+                <div className="absolute top-8 right-0">
+                    <svg className="w-6 h-6" style={{ color: accentColor }} fill={item.type === ClipboardType.PHONE || item.type === ClipboardType.SECURE ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={item.type === ClipboardType.PHONE || item.type === ClipboardType.SECURE ? 0 : 2}>
+                        {getIcon(item.type)}
+                    </svg>
+                </div>
+            )}
         </div>
         
-        <div className="flex justify-end mt-2">
-            <span className={`text-[10px] ${tagColor}`}>{item.timestamp}</span>
-        </div>
-        
-        {!isSelectionMode && (
-            <div 
-                onClick={(e) => { e.stopPropagation(); onMenuClick && onMenuClick(e, item); }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 p-2 cursor-pointer z-10"
-            >
-                <svg className="w-6 h-6 opacity-50 hover:opacity-100 transition-opacity" style={{ color: accentColor }} fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-                </svg>
+        {/* Bottom Section - Hashtags and Date aligned */}
+        <div className="flex justify-between items-center mt-3 pt-1">
+            <div className="flex items-center text-xs flex-wrap gap-2">
+                {item.tags.map((tag) => (
+                    <span key={tag} className={`${tagColor}`}>{tag}</span>
+                ))}
             </div>
-        )}
+            <span className={`text-[10px] ${tagColor} whitespace-nowrap ml-2`}>{item.timestamp}</span>
+        </div>
 
         {isSelectionMode && (
             <div className={`absolute inset-0 z-20 flex items-center justify-end pr-4 rounded-3xl transition-colors ${isSelected ? 'ring-2' : 'bg-black/40'}`} style={{ backgroundColor: isSelected ? `${accentColor}1A` : undefined, borderColor: isSelected ? accentColor : undefined, '--tw-ring-color': isSelected ? accentColor : undefined } as React.CSSProperties}>

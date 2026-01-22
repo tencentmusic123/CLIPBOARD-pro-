@@ -141,8 +141,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead }) => {
 
   const handleBulkFavorite = async () => {
       if (selectedIds.size === 0) return;
-      const hasUnpinned = items.filter(i => selectedIds.has(i.id)).some(i => !i.isPinned);
-      if (hasUnpinned) await clipboardRepository.favoriteItems(Array.from(selectedIds));
+      const hasUnfavorite = items.filter(i => selectedIds.has(i.id)).some(i => !i.isFavorite);
+      if (hasUnfavorite) await clipboardRepository.favoriteItems(Array.from(selectedIds));
       else await clipboardRepository.unfavoriteItems(Array.from(selectedIds));
       fetchData();
   };
@@ -277,21 +277,22 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead }) => {
              <div className="text-gray-500 text-center mt-20 font-light">No items found.</div>
           ) : (
             displayItems.map(item => (
-              <GoldCard 
-                key={item.id} 
-                item={item} 
-                searchQuery={searchQuery}
-                isSelectionMode={isSelectionMode}
-                isSelected={selectedIds.has(item.id)}
-                isDraggable={sortOption === 'CUSTOM'}
-                onMenuClick={(e, i) => { setActiveItemMenuId(i.id); }}
-                onLongPress={handleLongPress}
-                onClick={handleCardClick}
-                onUnpin={handleUnpin}
-                onDragStart={handleDragStart}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-              />
+              <div key={item.id} className="pr-4"> {/* Added padding right container for the outside dots */}
+                  <GoldCard 
+                    item={item} 
+                    searchQuery={searchQuery}
+                    isSelectionMode={isSelectionMode}
+                    isSelected={selectedIds.has(item.id)}
+                    isDraggable={sortOption === 'CUSTOM'}
+                    onMenuClick={(e, i) => { setActiveItemMenuId(i.id); }}
+                    onLongPress={handleLongPress}
+                    onClick={handleCardClick}
+                    onUnpin={handleUnpin}
+                    onDragStart={handleDragStart}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleDrop}
+                  />
+              </div>
             ))
           )}
       </main>
@@ -386,7 +387,11 @@ const DefaultHeader = ({ accentColor, textColor, isSortMenuOpen, isFilterOpen, o
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>
             </button>
             <button onClick={onFilterToggle} className={`transition-colors ${isFilterOpen ? textColor : 'opacity-80 hover:opacity-100'}`} style={{ color: isFilterOpen ? undefined : accentColor }}>
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M7 11h10v2H7zM4 7h16v2H4zm6 8h4v2h-4z" /></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 6C3 5.44772 3.44772 5 4 5H20C20.5523 5 21 5.44772 21 6C21 6.55228 20.5523 7 20 7H4C3.44772 7 3 6.55228 3 6Z" />
+                    <path d="M7 12C7 11.4477 7.44772 11 8 11H16C16.5523 11 17 11.4477 17 12C17 12.5523 16.5523 13 16 13H8C7.44772 13 7 12.5523 7 12Z" />
+                    <path d="M11 18C11 17.4477 11.4477 17 12 17H12.01C12.5623 17 13.01 17.4477 13.01 18C13.01 18.5523 12.5623 19 12.01 19H12C11.4477 19 11 18.5523 11 18Z" />
+                </svg>
             </button>
         </div>
     </div>
