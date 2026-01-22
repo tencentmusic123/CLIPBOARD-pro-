@@ -11,26 +11,28 @@ interface EditScreenProps {
 
 const EditScreen: React.FC<EditScreenProps> = ({ item, onBack, onSave }) => {
   const { accentColor, isDarkTheme, isAiSupportOn } = useSettings();
+  
+  // --- Local State ---
   const [title, setTitle] = useState(item.title || '');
   const [fontSize, setFontSize] = useState(16);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  
-  // AI Menu States
   const [isAiMenuOpen, setIsAiMenuOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   
+  // --- Refs ---
   const editorRef = useRef<HTMLDivElement>(null);
   const caseModeRef = useRef<number>(0);
 
+  // --- Effects ---
   useEffect(() => {
     if (editorRef.current) {
         editorRef.current.innerText = item.content;
     }
   }, [item.content]);
 
-  // --- Title Logic ---
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.value.length <= 30) setTitle(e.target.value);
+  // --- Helpers ---
+  const updateContent = (newText: string) => {
+      if (editorRef.current) editorRef.current.innerText = newText;
   };
 
   const execCmd = (command: string, value: string | undefined = undefined) => {
@@ -38,73 +40,56 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, onBack, onSave }) => {
       if (editorRef.current) editorRef.current.focus();
   };
 
+  // --- Input Handlers ---
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.value.length <= 30) setTitle(e.target.value);
+  };
+
   const handleFontSize = (delta: number) => setFontSize(Math.max(12, Math.min(32, fontSize + delta)));
-  const handleUndo = () => execCmd('undo');
-  const handleRedo = () => execCmd('redo');
-  const handleBold = () => execCmd('bold');
-  const handleUnderline = () => execCmd('underline');
-  const handleHighlight = () => execCmd('hiliteColor', accentColor); 
 
-  // --- AI Logic ---
-  const updateContent = (newText: string) => {
-      if (editorRef.current) editorRef.current.innerText = newText;
-  };
-
-  const handleRemoveDuplicates = () => {
-      if (!editorRef.current) return;
-      const text = editorRef.current.innerText;
-      updateContent([...new Set(text.split('\n'))].join('\n'));
-      setIsAiMenuOpen(false);
-  };
-
-  const handleCleanUp = () => {
-      if (!editorRef.current) return;
-      const text = editorRef.current.innerText;
-      updateContent(text.split('\n').map(l => l.trim().replace(/\s+/g, ' ')).filter(l => l.length > 0).join('\n'));
-      setIsAiMenuOpen(false);
-  };
-
-  const handleCaseConverter = () => {
+  // --- AI / Text Processing Handlers ---
+  const handleAiAction = (action: string) => {
       if (!editorRef.current) return;
       const text = editorRef.current.innerText;
       let newText = text;
-      const mode = (caseModeRef.current + 1) % 4;
-      caseModeRef.current = mode;
-      switch (mode) {
-          case 0: newText = text.toUpperCase(); break;
-          case 1: newText = text.toLowerCase(); break;
-          case 2: newText = text.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); break;
-          case 3: newText = text.toLowerCase().replace(/(^\s*\w|[\.\!\?]\s*\w)/g, c => c.toUpperCase()); break;
+
+      switch(action) {
+          case 'DUPLICATES':
+              newText = [...new Set(text.split('\n'))].join('\n');
+              break;
+          case 'CLEANUP':
+              newText = text.split('\n').map(l => l.trim().replace(/\s+/g, ' ')).filter(l => l.length > 0).join('\n');
+              break;
+          case 'LIST':
+              if (text.includes('\n')) newText = text.split('\n').map(l => l.trim() ? `• ${l.trim()}` : l).join('\n');
+              else if (text.includes('. ')) newText = text.split('. ').filter(s => s.trim()).map(s => `• ${s.trim()}`).join('\n');
+              else newText = `• ${text}`;
+              break;
+          case 'GRAMMAR':
+              // Mock grammar fix: Sentence case and single spacing
+              newText = text.replace(/\s+/g, ' ').replace(/([.,!?])(?=[^\s])/g, '$1 ');
+              newText = newText.charAt(0).toUpperCase() + newText.slice(1);
+              break;
+          case 'CASE':
+              const mode = (caseModeRef.current + 1) % 4;
+              caseModeRef.current = mode;
+              switch (mode) {
+                  case 0: newText = text.toUpperCase(); break;
+                  case 1: newText = text.toLowerCase(); break;
+                  case 2: newText = text.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); break;
+                  case 3: newText = text.toLowerCase().replace(/(^\s*\w|[\.\!\?]\s*\w)/g, c => c.toUpperCase()); break;
+              }
+              break;
+          case 'TRANSLATE':
+              alert("Language packs not found.");
+              return; // Don't close menu or update text
       }
-      updateContent(newText);
-  };
-
-  const handleMakeList = () => {
-      if (!editorRef.current) return;
-      const text = editorRef.current.innerText;
-      let newText = "";
-      if (text.includes('\n')) newText = text.split('\n').map(l => l.trim() ? `• ${l.trim()}` : l).join('\n');
-      else if (text.includes('. ')) newText = text.split('. ').filter(s => s.trim()).map(s => `• ${s.trim()}`).join('\n');
-      else newText = `• ${text}`;
+      
       updateContent(newText);
       setIsAiMenuOpen(false);
   };
 
-  const handleGrammar = () => {
-      if (!editorRef.current) return;
-      let text = editorRef.current.innerText;
-      text = text.replace(/\s+/g, ' ').replace(/([.,!?])(?=[^\s])/g, '$1 ');
-      text = text.charAt(0).toUpperCase() + text.slice(1);
-      updateContent(text);
-      setIsAiMenuOpen(false);
-  };
-
-  const handleTranslate = () => {
-      alert("Language packs not found.");
-      setIsAiMenuOpen(false);
-  };
-
-  // --- Save Logic ---
+  // --- Save Handler ---
   const performSave = async (destination: 'CLIPBOARD' | 'NOTES') => {
       const content = editorRef.current?.innerText || '';
       await clipboardRepository.updateItem(item.id, { 
@@ -117,6 +102,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, onBack, onSave }) => {
       onSave();
   };
 
+  // --- Render Styles ---
   const bgColor = isDarkTheme ? 'bg-black' : 'bg-gray-100';
   const textColor = isDarkTheme ? 'text-white' : 'text-black';
   const headerBg = isDarkTheme ? 'bg-black border-zinc-900' : 'bg-white border-gray-200';
@@ -144,8 +130,8 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, onBack, onSave }) => {
         
         <div className="flex items-center space-x-4">
              <div className={`flex items-center space-x-3 ${isDarkTheme ? 'text-zinc-400' : 'text-gray-500'}`}>
-                 <button onClick={handleUndo} className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg></button>
-                 <button onClick={handleRedo} className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg></button>
+                 <button onClick={() => execCmd('undo')} className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg></button>
+                 <button onClick={() => execCmd('redo')} className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg></button>
              </div>
              <button onClick={() => setShowSaveDialog(true)} className="font-medium text-lg hover:opacity-80 transition-colors px-2" style={{ color: accentColor }}>Save</button>
         </div>
@@ -163,13 +149,13 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, onBack, onSave }) => {
             <div className="absolute top-6 left-6 text-zinc-600 pointer-events-none text-base">Content</div>
         )}
 
-        {/* --- HELP OVERLAY --- */}
+        {/* Help Overlay */}
         {isHelpOpen && (
             <div className={`absolute inset-x-4 top-4 bottom-4 border rounded-2xl p-6 z-40 overflow-y-auto backdrop-blur-md shadow-2xl animate-fade-in ${isDarkTheme ? 'bg-[#121212]/95 border-gold/50' : 'bg-white/95 border-gray-300'}`} style={{ borderColor: isDarkTheme ? undefined : accentColor }}>
                  <h3 className="text-lg font-bold mb-4" style={{ color: accentColor }}>AI Tools Guide</h3>
                  <ul className={`space-y-4 text-sm leading-relaxed font-light ${isDarkTheme ? 'text-zinc-300' : 'text-gray-700'}`}>
-                    {/* ... help items ... */}
-                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>1. Remove Duplicates</strong> Finds and deletes any repeated lines.</li>
+                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Remove Duplicates:</strong> Finds and deletes any repeated lines.</li>
+                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Clean Up:</strong> Removes empty lines and extra spaces.</li>
                  </ul>
             </div>
         )}
@@ -188,9 +174,13 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, onBack, onSave }) => {
                    </button>
                </div>
                <div className={`border rounded-xl p-2 grid grid-cols-2 gap-2 shadow-2xl ${isDarkTheme ? 'bg-[#0A0A0A] border-zinc-800' : 'bg-white border-gray-200'}`}>
-                   {['Remove Duplicates', 'Clean Up', 'Case Converter', 'Make List', 'Grammer Check', 'Translate'].map((label, i) => (
-                       <button key={i} onClick={() => { if(i===0) handleRemoveDuplicates(); if(i===1) handleCleanUp(); if(i===2) handleCaseConverter(); if(i===3) handleMakeList(); if(i===4) handleGrammar(); if(i===5) handleTranslate(); }} className={`border py-3 px-2 rounded-lg text-sm transition-all ${isDarkTheme ? 'border-zinc-800 bg-[#1A1A1A] text-zinc-300 hover:text-white' : 'border-gray-200 bg-gray-50 text-gray-700 hover:text-black'}`} style={{ borderColor: 'transparent', ':hover': { borderColor: accentColor } } as any} onMouseEnter={(e) => e.currentTarget.style.borderColor = accentColor} onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}>{label}</button>
-                   ))}
+                   {/* Cleaned up button generation */}
+                   <AiButton label="Remove Duplicates" onClick={() => handleAiAction('DUPLICATES')} isDark={isDarkTheme} accentColor={accentColor} />
+                   <AiButton label="Clean Up" onClick={() => handleAiAction('CLEANUP')} isDark={isDarkTheme} accentColor={accentColor} />
+                   <AiButton label="Case Converter" onClick={() => handleAiAction('CASE')} isDark={isDarkTheme} accentColor={accentColor} />
+                   <AiButton label="Make List" onClick={() => handleAiAction('LIST')} isDark={isDarkTheme} accentColor={accentColor} />
+                   <AiButton label="Grammer Check" onClick={() => handleAiAction('GRAMMAR')} isDark={isDarkTheme} accentColor={accentColor} />
+                   <AiButton label="Translate" onClick={() => handleAiAction('TRANSLATE')} isDark={isDarkTheme} accentColor={accentColor} />
                </div>
           </div>
       )}
@@ -218,9 +208,9 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, onBack, onSave }) => {
           <div className={`w-[1px] h-6 mx-1 ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-300'}`}></div>
 
           <div className="flex items-center space-x-1 shrink-0">
-              <button onClick={handleUnderline} className={`w-10 h-10 flex items-center justify-center rounded-lg ${isDarkTheme ? 'text-zinc-400 hover:bg-zinc-800' : 'text-gray-500 hover:bg-gray-100'}`}><span className="underline font-serif text-xl">U</span></button>
-              <button onClick={handleHighlight} className={`w-10 h-10 flex items-center justify-center rounded-lg ${isDarkTheme ? 'text-zinc-400 hover:bg-zinc-800' : 'text-gray-500 hover:bg-gray-100'}`}><div className="w-4 h-4 rounded-full" style={{ backgroundColor: accentColor }}></div></button>
-              <button onClick={handleBold} className={`w-10 h-10 flex items-center justify-center rounded-lg ${isDarkTheme ? 'text-zinc-400 hover:bg-zinc-800' : 'text-gray-500 hover:bg-gray-100'}`}><span className="font-bold font-serif text-xl">B</span></button>
+              <button onClick={() => execCmd('underline')} className={`w-10 h-10 flex items-center justify-center rounded-lg ${isDarkTheme ? 'text-zinc-400 hover:bg-zinc-800' : 'text-gray-500 hover:bg-gray-100'}`}><span className="underline font-serif text-xl">U</span></button>
+              <button onClick={() => execCmd('hiliteColor', accentColor)} className={`w-10 h-10 flex items-center justify-center rounded-lg ${isDarkTheme ? 'text-zinc-400 hover:bg-zinc-800' : 'text-gray-500 hover:bg-gray-100'}`}><div className="w-4 h-4 rounded-full" style={{ backgroundColor: accentColor }}></div></button>
+              <button onClick={() => execCmd('bold')} className={`w-10 h-10 flex items-center justify-center rounded-lg ${isDarkTheme ? 'text-zinc-400 hover:bg-zinc-800' : 'text-gray-500 hover:bg-gray-100'}`}><span className="font-bold font-serif text-xl">B</span></button>
           </div>
       </div>
 
@@ -241,5 +231,17 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, onBack, onSave }) => {
     </div>
   );
 };
+
+const AiButton: React.FC<{ label: string; onClick: () => void; isDark: boolean; accentColor: string }> = ({ label, onClick, isDark, accentColor }) => (
+    <button 
+        onClick={onClick} 
+        className={`border py-3 px-2 rounded-lg text-sm transition-all ${isDark ? 'border-zinc-800 bg-[#1A1A1A] text-zinc-300 hover:text-white' : 'border-gray-200 bg-gray-50 text-gray-700 hover:text-black'}`}
+        style={{ borderColor: 'transparent' }}
+        onMouseEnter={(e) => e.currentTarget.style.borderColor = accentColor} 
+        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}
+    >
+        {label}
+    </button>
+);
 
 export default EditScreen;

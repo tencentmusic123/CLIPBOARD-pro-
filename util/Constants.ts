@@ -1,5 +1,6 @@
 import { ClipboardItem, ClipboardType } from '../types';
 
+// --- Colors ---
 export const THEME_COLORS = {
   GOLD: '#D4AF37',
   BLACK: '#000000',
@@ -7,6 +8,7 @@ export const THEME_COLORS = {
   DARK_GRAY: '#1A1A1A'
 };
 
+// --- Mock Data ---
 export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
   {
     id: '1',
@@ -15,7 +17,7 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '10:44 PM • 20 Dec',
     tags: ['#work'],
     isPinned: true,
-    isDeleted: true, // Moved to trash as per screenshot
+    isDeleted: true,
   },
   {
     id: '2',
@@ -25,7 +27,7 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '10:43 PM • 23 Dec',
     tags: ['#sport'],
     isPinned: false,
-    isDeleted: true, // Moved to trash as per screenshot
+    isDeleted: true,
   },
   {
     id: '3',
@@ -34,7 +36,7 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '10:42 PM • 23 Dec',
     tags: ['#sport'],
     isPinned: false,
-    isDeleted: true, // Moved to trash as per screenshot
+    isDeleted: true,
   },
   {
     id: '4',
@@ -43,7 +45,7 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '10:42 PM • 23 Dec',
     tags: ['#sport'],
     isPinned: false,
-    isDeleted: true, // Moved to trash as per screenshot
+    isDeleted: true,
   },
   {
     id: '5',
@@ -52,7 +54,7 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     timestamp: '10:42 PM • 23 Dec',
     tags: ['#sport'],
     isPinned: false,
-    isDeleted: true, // Moved to trash as per screenshot
+    isDeleted: true,
   },
   {
     id: '6',
@@ -72,4 +74,34 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     isPinned: false,
     isDeleted: false,
   }
+];
+
+// --- Static Lists ---
+export const GOOGLE_TRANSLATE_LANGUAGES = [
+    "Afrikaans", "Albanian", "Amharic", "Arabic", "Armenian", "Assamese", "Aymara", "Azerbaijani", 
+    "Bambara", "Basque", "Belarusian", "Bengali", "Bhojpuri", "Bosnian", "Bulgarian", 
+    "Catalan", "Cebuano", "Chichewa", "Chinese (Simplified)", "Chinese (Traditional)", "Corsican", "Croatian", "Czech", 
+    "Danish", "Dhivehi", "Dogri", "Dutch", 
+    "English", "Esperanto", "Estonian", "Ewe", 
+    "Filipino", "Finnish", "French", "Frisian", 
+    "Galician", "Georgian", "German", "Greek", "Guarani", "Gujarati", 
+    "Haitian Creole", "Hausa", "Hawaiian", "Hebrew", "Hindi", "Hmong", "Hungarian", 
+    "Icelandic", "Igbo", "Ilocano", "Indonesian", "Irish", "Italian", 
+    "Japanese", "Javanese", 
+    "Kannada", "Kazakh", "Khmer", "Kinyarwanda", "Konkani", "Korean", "Krio", "Kurdish (Kurmanji)", "Kurdish (Sorani)", "Kyrgyz", 
+    "Lao", "Latin", "Latvian", "Lingala", "Lithuanian", "Luganda", "Luxembourgish", 
+    "Macedonian", "Maithili", "Malagasy", "Malay", "Malayalam", "Maltese", "Maori", "Marathi", "Meiteilon (Manipuri)", "Mizo", "Mongolian", "Myanmar (Burmese)", 
+    "Nepali", "Norwegian", 
+    "Odia (Oriya)", "Oromo", 
+    "Pashto", "Persian", "Polish", "Portuguese", "Punjabi", 
+    "Quechua", 
+    "Romanian", "Russian", 
+    "Samoan", "Sanskrit", "Scots Gaelic", "Sepedi", "Serbian", "Sesotho", "Shona", "Sindhi", "Sinhala", "Slovak", "Slovenian", "Somali", "Spanish", "Sundanese", "Swahili", "Swedish", 
+    "Tajik", "Tamil", "Tatar", "Telugu", "Thai", "Tigrinya", "Tsonga", "Turkish", "Turkmen", "Twi", 
+    "Ukrainian", "Urdu", "Uyghur", "Uzbek", 
+    "Vietnamese", 
+    "Welsh", 
+    "Xhosa", 
+    "Yiddish", "Yoruba", 
+    "Zulu"
 ];

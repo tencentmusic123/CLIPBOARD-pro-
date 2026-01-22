@@ -197,7 +197,7 @@ const GoldCard: React.FC<GoldCardProps> = ({
         )}
 
         {isSelectionMode && (
-            <div className={`absolute inset-0 z-20 flex items-center justify-end pr-4 rounded-3xl transition-colors ${isSelected ? 'ring-2' : 'bg-black/40'}`} style={{ backgroundColor: isSelected ? `${accentColor}1A` : undefined, borderColor: isSelected ? accentColor : undefined, ringColor: isSelected ? accentColor : undefined }}>
+            <div className={`absolute inset-0 z-20 flex items-center justify-end pr-4 rounded-3xl transition-colors ${isSelected ? 'ring-2' : 'bg-black/40'}`} style={{ backgroundColor: isSelected ? `${accentColor}1A` : undefined, borderColor: isSelected ? accentColor : undefined, '--tw-ring-color': isSelected ? accentColor : undefined } as React.CSSProperties}>
                 {isSelected ? (
                     <svg className="w-8 h-8 drop-shadow-md" style={{ color: isDarkTheme ? 'white' : accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
