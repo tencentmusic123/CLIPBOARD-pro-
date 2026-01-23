@@ -15,16 +15,39 @@ class ClipboardRepository {
 
         // Sorting Logic
         result.sort((a, b) => {
+          // 1. Always prioritize Pinned items to the top
+          // This check happens BEFORE sort direction is applied to ensure they never flip to the bottom
+          // regardless of ASC or DESC. Pinned is a "State", not just a value.
+          if (a.isPinned !== b.isPinned) {
+              return a.isPinned ? -1 : 1;
+          }
+
+          // 2. Determine comparison value based on criteria
           let comparison = 0;
           
           switch (sortOption) {
             case 'CUSTOM':
-              // Pinned first, then by internal list order
-              if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-              return this.items.indexOf(a) - this.items.indexOf(b);
+              // For CUSTOM (Manual/Insertion Order), Index 0 represents the "Top" or "Newest".
+              // We want DESC (Default) to show Top (Index 0) first.
+              // Standard sort: if return < 0, a comes first.
+              // Final logic is: sortDirection === 'ASC' ? comparison : -comparison;
+              
+              // If we use: indexOf(b) - indexOf(a)
+              // Example: a=Index0, b=Index1. 1 - 0 = 1.
+              // If ASC: returns 1. b before a. Order: 1, 0 (Bottom/Oldest first).
+              // If DESC: returns -1. a before b. Order: 0, 1 (Top/Newest first).
+              comparison = this.items.indexOf(b) - this.items.indexOf(a);
+              break;
             
             case 'DATE':
-               comparison = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+               const dateA = new Date(a.timestamp).getTime();
+               const dateB = new Date(b.timestamp).getTime();
+               if (!isNaN(dateA) && !isNaN(dateB)) {
+                   comparison = dateA - dateB;
+               } else {
+                   // Fallback for mock data strings or ID based sorting
+                   comparison = a.id.localeCompare(b.id);
+               }
                break;
             
             case 'LENGTH':
@@ -32,10 +55,11 @@ class ClipboardRepository {
                break;
             
             case 'ALPHABETICAL':
-               comparison = a.content.localeCompare(b.content);
+               comparison = (a.title || a.content).toLowerCase().localeCompare((b.title || b.content).toLowerCase());
                break;
           }
 
+          // 3. Apply Direction (ASC/DESC)
           return sortDirection === 'ASC' ? comparison : -comparison;
         });
 
@@ -126,9 +150,14 @@ class ClipboardRepository {
   }
 
   async pinItem(id: string, isPinned: boolean): Promise<void> {
-    this.items = this.items.map(i => 
-      i.id === id ? { ...i, isPinned } : i
-    );
+    const index = this.items.findIndex(i => i.id === id);
+    if (index !== -1) {
+        const item = { ...this.items[index], isPinned };
+        // Remove from current position
+        this.items.splice(index, 1);
+        // Move to the very top of the list (Index 0).
+        this.items.unshift(item);
+    }
   }
 
   async toggleFavorite(id: string): Promise<void> {
@@ -157,11 +186,14 @@ class ClipboardRepository {
     itemsToMerge.sort((a, b) => this.items.indexOf(a) - this.items.indexOf(b));
 
     const mergedContent = itemsToMerge.map(i => i.content).join('\n\n');
+    // Default merged category to the category of the first item
+    const mergedCategory = itemsToMerge[0].category;
     
     const newItem: ClipboardItem = {
       id: Date.now().toString(),
       content: mergedContent,
       type: ClipboardType.TEXT,
+      category: mergedCategory,
       timestamp: new Date().toLocaleString(),
       tags: ['#merged'],
       isPinned: false, 
@@ -177,6 +209,15 @@ class ClipboardRepository {
       if (ids.includes(i.id)) {
         const updatedTags = Array.from(new Set([...i.tags, ...newTags]));
         return { ...i, tags: updatedTags };
+      }
+      return i;
+    });
+  }
+
+  async replaceTagsForItems(ids: string[], newTags: string[]): Promise<void> {
+    this.items = this.items.map(i => {
+      if (ids.includes(i.id)) {
+        return { ...i, tags: newTags };
       }
       return i;
     });

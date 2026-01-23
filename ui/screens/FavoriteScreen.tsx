@@ -2,17 +2,16 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { ClipboardItem, ClipboardType } from '../../types';
 import GoldCard from '../components/GoldCard';
+import JSZip from 'jszip';
 
 interface FavoriteScreenProps {
   onBack: () => void;
   onRead?: (item: ClipboardItem) => void;
 }
 
-type FilterSource = 'clipboard' | 'notes';
 type FilterType = 'ALL' | ClipboardType;
 
 interface FilterState {
-  source: FilterSource;
   type: FilterType;
   tag: string;
 }
@@ -28,7 +27,6 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
   // Dialog/Overlay States
   const [showMoveToTrashConfirm, setShowMoveToTrashConfirm] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
-  const [showExportOptions, setShowExportOptions] = useState(false);
   const [showHashtagOverlay, setShowHashtagOverlay] = useState(false);
   
   // Hashtag State
@@ -37,7 +35,6 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
   // Filter State
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filter, setFilter] = useState<FilterState>({
-    source: 'clipboard',
     type: 'ALL',
     tag: 'All'
   });
@@ -63,7 +60,6 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
   // --- Filtering Logic ---
   const filteredItems = useMemo(() => {
     return items.filter(item => {
-      if (filter.source === 'notes') return false; 
       if (filter.type !== 'ALL' && item.type !== filter.type) return false;
       if (filter.tag !== 'All' && !item.tags.includes(filter.tag)) return false;
       return true;
@@ -107,7 +103,6 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
     setIsSelectionMode(false);
     setSelectedIds(new Set());
     setShowMoreOptions(false);
-    setShowExportOptions(false);
   };
 
   // --- Action Handlers ---
@@ -151,18 +146,42 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
       exitSelectionMode();
   };
 
-  const handleExport = (format: 'txt' | 'pdf') => {
-      const textToExport = filteredItems
-        .filter(i => selectedIds.has(i.id))
-        .map(i => i.content).join('\n\n-------------------\n\n');
-        
-      const element = document.createElement("a");
-      const file = new Blob([textToExport], {type: format === 'pdf' ? 'application/pdf' : 'text/plain'});
-      element.href = URL.createObjectURL(file);
-      element.download = `favorites_export_${Date.now()}.${format}`;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
+  const handleExport = async () => {
+      const selectedItems = filteredItems.filter(i => selectedIds.has(i.id));
+      if (selectedItems.length === 0) return;
+
+      if (selectedItems.length === 1) {
+          // Single export
+          const item = selectedItems[0];
+          const filename = (item.title ? item.title.replace(/[^a-z0-9_\-\. ]/gi, '') : `Clip`) + '.txt';
+          const blob = new Blob([item.content], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+      } else {
+          // ZIP export
+          const zip = new JSZip();
+          selectedItems.forEach((item, index) => {
+              const safeTitle = item.title ? item.title.replace(/[^a-z0-9_\-\. ]/gi, '') : `Clip`;
+              const filename = `${safeTitle}_${index + 1}.txt`;
+              zip.file(filename, item.content);
+          });
+
+          const content = await zip.generateAsync({ type: 'blob' });
+          const url = URL.createObjectURL(content);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Favorites_Export_${Date.now()}.zip`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+      }
       
       exitSelectionMode();
   };
@@ -193,7 +212,7 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
   // --- Render ---
 
   return (
-    <div className="min-h-screen bg-black text-white relative flex flex-col max-w-md mx-auto border-x border-zinc-900 shadow-2xl h-full animate-fade-in font-sans" onClick={() => { setShowMoreOptions(false); setShowExportOptions(false); }}>
+    <div className="min-h-screen bg-black text-white relative flex flex-col max-w-md mx-auto border-x border-zinc-900 shadow-2xl h-full animate-fade-in font-sans" onClick={() => setShowMoreOptions(false)}>
       
       {/* --- HEADER --- */}
       <header className="px-4 py-4 flex items-center justify-between bg-black/95 backdrop-blur-md sticky top-0 z-20 border-b border-zinc-800 h-16">
@@ -251,10 +270,10 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
         ) : (
             <button 
                 onClick={() => setIsFilterOpen(!isFilterOpen)} 
-                className={`transition-colors ${isFilterOpen ? 'text-gold' : 'text-white hover:text-gold'}`}
+                className="hover:opacity-80 transition-opacity"
             >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M7 11h10v2H7zM4 7h16v2H4zm6 8h4v2h-4z" />
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M3 4C3 3.44772 3.44772 3 4 3H20C20.5523 3 21 3.44772 21 4V6.58579C21 6.851 20.8946 7.10536 20.7071 7.29289L14.2929 13.7071C14.1054 13.8946 14 14.149 14 14.4142V17L10 21V14.4142C10 14.149 9.89464 13.8946 9.70711 13.7071L3.29289 7.29289C3.10536 7.10536 3 6.851 3 6.58579V4Z" fill="#EAC336"/>
                 </svg>
             </button>
         )}
@@ -269,13 +288,12 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
              <div className="bg-black border-2 border-gold rounded-3xl p-5 shadow-2xl relative">
                 <div className="absolute -top-3 right-5 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[10px] border-b-gold"></div>
                 <div className="flex items-center justify-center mb-6">
-                    <svg className="w-5 h-5 text-white mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M7 11h10v2H7zM4 7h16v2H4zm6 8h4v2h-4z" /></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
+                        <path fillRule="evenodd" clipRule="evenodd" d="M3 4C3 3.44772 3.44772 3 4 3H20C20.5523 3 21 3.44772 21 4V6.58579C21 6.851 20.8946 7.10536 20.7071 7.29289L14.2929 13.7071C14.1054 13.8946 14 14.149 14 14.4142V17L10 21V14.4142C10 14.149 9.89464 13.8946 9.70711 13.7071L3.29289 7.29289C3.10536 7.10536 3 6.851 3 6.58579V4Z" fill="#EAC336"/>
+                    </svg>
                     <span className="text-white text-xl tracking-wider">filter</span>
                 </div>
-                <div className="flex justify-center mb-6 gap-4">
-                    <button onClick={() => setFilter(f => ({ ...f, source: 'clipboard' }))} className={`px-6 py-2 rounded-full border border-gold text-lg transition-all ${filter.source === 'clipboard' ? 'bg-black text-white shadow-[0_0_10px_#D4AF37]' : 'bg-transparent text-gray-400'}`}>clipboard</button>
-                    <button onClick={() => setFilter(f => ({ ...f, source: 'notes' }))} className={`px-6 py-2 rounded-full border border-gold text-lg transition-all ${filter.source === 'notes' ? 'bg-black text-white shadow-[0_0_10px_#D4AF37]' : 'bg-transparent text-gray-400'}`}>notes</button>
-                </div>
+                {/* Source buttons removed as filter handles category separately */}
                 <div className="grid grid-cols-3 gap-y-4 gap-x-2 mb-6">
                     <FilterItem label="All" active={filter.type === 'ALL'} onClick={() => setFilter(f => ({...f, type: 'ALL'}))} underline />
                     <FilterItem label="Phone" active={filter.type === ClipboardType.PHONE} onClick={() => setFilter(f => ({...f, type: ClipboardType.PHONE}))} />
@@ -296,27 +314,12 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
       {showMoreOptions && (
           <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-4 z-40 animate-fade-in-down w-56">
               <div className="bg-zinc-900 border border-gold rounded-xl overflow-hidden shadow-2xl flex flex-col">
-                  {showExportOptions ? (
-                     <>
-                        <div className="px-4 py-3 text-gold text-center border-b border-zinc-800 font-bold">Export As</div>
-                        <MenuItem label="TXT File" onClick={() => handleExport('txt')} />
-                        <MenuItem label="PDF File" onClick={() => handleExport('pdf')} />
-                        <MenuItem label="< Back" onClick={() => setShowExportOptions(false)} textColor='text-zinc-500' />
-                     </>
-                  ) : (
-                    <>
-                      <MenuItem label="Merge" onClick={handleMerge} />
-                      <MenuItem label="Share" onClick={handleShare} />
-                      <div className="group relative">
-                          <button onClick={() => setShowExportOptions(true)} className="w-full px-4 py-3 text-left text-white hover:bg-zinc-800 border-b border-zinc-800 flex justify-between items-center text-sm font-medium">
-                              Export <span>▸</span>
-                          </button>
-                      </div>
-                      <MenuItem label="Copy to Notes" onClick={handleCopyToNotes} />
-                      <MenuItem label="Print" onClick={handlePrint} />
-                      <MenuItem label="Add #Tag" onClick={handleAddHashtagStart} />
-                    </>
-                  )}
+                  <MenuItem label="Merge" onClick={handleMerge} />
+                  <MenuItem label="Share" onClick={handleShare} />
+                  <MenuItem label="Export" onClick={handleExport} />
+                  <MenuItem label="Copy to Notes" onClick={handleCopyToNotes} />
+                  <MenuItem label="Print" onClick={handlePrint} />
+                  <MenuItem label="Add #Tag" onClick={handleAddHashtagStart} />
               </div>
           </div>
       )}
@@ -344,7 +347,9 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
                         {isSelectionMode && (
                              <div className={`absolute inset-0 z-10 flex items-center justify-end pr-4 rounded-3xl transition-colors ${isSelected ? 'bg-gold/10 ring-2 ring-gold' : 'bg-black/40'}`}>
                                 {isSelected ? (
-                                    <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
                                 ) : (
                                     <div className="w-6 h-6 rounded-full border-2 border-gray-500"></div>
                                 )}

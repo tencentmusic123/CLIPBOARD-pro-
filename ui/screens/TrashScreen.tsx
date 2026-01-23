@@ -7,11 +7,9 @@ interface TrashScreenProps {
   onBack: () => void;
 }
 
-type FilterSource = 'clipboard' | 'notes';
 type FilterType = 'ALL' | ClipboardType;
 
 interface FilterState {
-  source: FilterSource;
   type: FilterType;
   tag: string; // 'All' or specific tag
 }
@@ -28,7 +26,6 @@ const TrashScreen: React.FC<TrashScreenProps> = ({ onBack }) => {
   // Filter State
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filter, setFilter] = useState<FilterState>({
-    source: 'clipboard',
     type: 'ALL',
     tag: 'All'
   });
@@ -54,13 +51,10 @@ const TrashScreen: React.FC<TrashScreenProps> = ({ onBack }) => {
   // --- Filtering Logic ---
   const filteredItems = useMemo(() => {
     return items.filter(item => {
-      // 1. Filter by Source (Mock logic: currently everything is clipboard items)
-      if (filter.source === 'notes') return false; 
-
-      // 2. Filter by Type
+      // 1. Filter by Type
       if (filter.type !== 'ALL' && item.type !== filter.type) return false;
 
-      // 3. Filter by Tag
+      // 2. Filter by Tag
       if (filter.tag !== 'All' && !item.tags.includes(filter.tag)) return false;
 
       return true;
@@ -161,11 +155,11 @@ const TrashScreen: React.FC<TrashScreenProps> = ({ onBack }) => {
         ) : (
             <button 
                 onClick={() => setIsFilterOpen(!isFilterOpen)} 
-                className={`transition-colors ${isFilterOpen ? 'text-gold' : 'text-white hover:text-gold'}`}
+                className="hover:opacity-80 transition-opacity"
             >
                 <div className="flex items-center gap-1">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M7 11h10v2H7zM4 7h16v2H4zm6 8h4v2h-4z" />
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fillRule="evenodd" clipRule="evenodd" d="M3 4C3 3.44772 3.44772 3 4 3H20C20.5523 3 21 3.44772 21 4V6.58579C21 6.851 20.8946 7.10536 20.7071 7.29289L14.2929 13.7071C14.1054 13.8946 14 14.149 14 14.4142V17L10 21V14.4142C10 14.149 9.89464 13.8946 9.70711 13.7071L3.29289 7.29289C3.10536 7.10536 3 6.851 3 6.58579V4Z" fill="#EAC336"/>
                     </svg>
                 </div>
             </button>
@@ -183,24 +177,10 @@ const TrashScreen: React.FC<TrashScreenProps> = ({ onBack }) => {
                 <div className="absolute -top-3 right-5 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[10px] border-b-gold"></div>
                 
                 <div className="flex items-center justify-center mb-6">
-                    <svg className="w-5 h-5 text-white mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M7 11h10v2H7zM4 7h16v2H4zm6 8h4v2h-4z" /></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
+                        <path fillRule="evenodd" clipRule="evenodd" d="M3 4C3 3.44772 3.44772 3 4 3H20C20.5523 3 21 3.44772 21 4V6.58579C21 6.851 20.8946 7.10536 20.7071 7.29289L14.2929 13.7071C14.1054 13.8946 14 14.149 14 14.4142V17L10 21V14.4142C10 14.149 9.89464 13.8946 9.70711 13.7071L3.29289 7.29289C3.10536 7.10536 3 6.851 3 6.58579V4Z" fill="#EAC336"/>
+                    </svg>
                     <span className="text-white text-xl tracking-wider">filter</span>
-                </div>
-
-                {/* Source Toggle */}
-                <div className="flex justify-center mb-6 gap-4">
-                    <button 
-                        onClick={() => setFilter(f => ({ ...f, source: 'clipboard' }))}
-                        className={`px-6 py-2 rounded-full border border-gold text-lg transition-all ${filter.source === 'clipboard' ? 'bg-black text-white shadow-[0_0_10px_#D4AF37]' : 'bg-transparent text-gray-400'}`}
-                    >
-                        clipboard
-                    </button>
-                    <button 
-                        onClick={() => setFilter(f => ({ ...f, source: 'notes' }))}
-                        className={`px-6 py-2 rounded-full border border-gold text-lg transition-all ${filter.source === 'notes' ? 'bg-black text-white shadow-[0_0_10px_#D4AF37]' : 'bg-transparent text-gray-400'}`}
-                    >
-                        notes
-                    </button>
                 </div>
 
                 {/* Types Grid */}

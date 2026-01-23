@@ -33,18 +33,44 @@ const GoldCard: React.FC<GoldCardProps> = ({
 }) => {
   const { accentColor, isDarkTheme } = useSettings();
   const [swipeOffset, setSwipeOffset] = useState(0);
+  
+  // Logic Refs
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchStartX = useRef<number | null>(null);
-  const isDragging = useRef(false);
+  const touchStartX = useRef<number | null>(null); // For Swipe
+  const startCoords = useRef<{ x: number, y: number } | null>(null); // For Long Press Threshold
+  const isDragging = useRef(false); // Distinction between click/longpress vs scroll/drag
 
-  // --- Long Press Logic ---
-  const handleStart = () => {
+  // --- Long Press & Click Logic ---
+  
+  const handleStart = (clientX: number, clientY: number) => {
     isDragging.current = false;
+    startCoords.current = { x: clientX, y: clientY };
+    
+    // Start Long Press Timer
     timerRef.current = setTimeout(() => {
         if (!isDragging.current && onLongPress) {
             onLongPress(item);
+            // Prevent click from firing after long press
+            isDragging.current = true; 
         }
     }, 500);
+  };
+
+  const handleMove = (clientX: number, clientY: number) => {
+      if (!startCoords.current) return;
+
+      // Calculate distance moved
+      const moveX = Math.abs(clientX - startCoords.current.x);
+      const moveY = Math.abs(clientY - startCoords.current.y);
+      
+      // If moved more than 10px, cancel long press (it's a scroll or drag)
+      if (moveX > 10 || moveY > 10) {
+          isDragging.current = true;
+          if (timerRef.current) {
+              clearTimeout(timerRef.current);
+              timerRef.current = null;
+          }
+      }
   };
 
   const handleEnd = () => {
@@ -54,24 +80,20 @@ const GoldCard: React.FC<GoldCardProps> = ({
     }
     setSwipeOffset(0);
     touchStartX.current = null;
+    startCoords.current = null;
   };
 
-  const handleMove = () => {
-      isDragging.current = true;
-      if (timerRef.current) {
-          clearTimeout(timerRef.current);
-          timerRef.current = null;
-      }
-  };
+  // --- Input Handlers ---
 
-  // --- Swipe Logic ---
   const handleTouchStart = (e: React.TouchEvent) => {
-      handleStart();
+      handleStart(e.touches[0].clientX, e.touches[0].clientY);
       touchStartX.current = e.touches[0].clientX;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-      handleMove();
+      handleMove(e.touches[0].clientX, e.touches[0].clientY);
+      
+      // Swipe Logic for Unpin
       if (touchStartX.current !== null && item.isPinned && onUnpin && !isSelectionMode) {
           const currentX = e.touches[0].clientX;
           const diff = currentX - touchStartX.current;
@@ -82,16 +104,52 @@ const GoldCard: React.FC<GoldCardProps> = ({
   };
 
   const handleTouchEnd = () => {
-      if (swipeOffset > 80 && item.isPinned && onUnpin && !isSelectionMode) {
+      if (swipeOffset > 50 && onUnpin && item.isPinned && !isSelectionMode) {
           onUnpin(item);
       }
       handleEnd();
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+      // Only Left Click triggers long press logic
+      if (e.button === 0) {
+          handleStart(e.clientX, e.clientY);
+      }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+      handleMove(e.clientX, e.clientY);
+  };
+
   const handleClick = (e: React.MouseEvent) => {
+      // If we flagged it as dragging/long-pressed, don't trigger normal click
       if (isDragging.current) return;
       if (onClick) onClick(item);
   };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+      e.preventDefault();
+      // Right click triggers Selection Mode (Long Press action)
+      if (onLongPress) {
+          // Clear any pending click timers just in case
+          if (timerRef.current) {
+              clearTimeout(timerRef.current);
+              timerRef.current = null;
+          }
+          onLongPress(item);
+      }
+  };
+
+  const handleDragStartInternal = (e: React.DragEvent) => {
+      // Cancel long press if native drag starts
+      if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+      }
+      if (onDragStart) onDragStart(e, item);
+  };
+
+  // --- Icons & Render Helpers ---
 
   const getIcon = (type: ClipboardType) => {
     switch (type) {
@@ -113,9 +171,23 @@ const GoldCard: React.FC<GoldCardProps> = ({
   };
 
   const renderContent = () => {
-      const text = item.displayContent || item.content;
-      if (!searchQuery) return text;
-      const parts = text.split(new RegExp(`(${searchQuery})`, 'gi'));
+      let textToDisplay = "";
+      
+      // Auto-Title Logic: If the Title is empty, use the first 50 characters of the content.
+      if (item.title && item.title.trim()) {
+          textToDisplay = item.title;
+      } else {
+          const rawContent = item.displayContent || item.content;
+          if (rawContent.length > 50) {
+              textToDisplay = rawContent.substring(0, 50) + '...';
+          } else {
+              textToDisplay = rawContent;
+          }
+      }
+
+      if (!searchQuery) return textToDisplay;
+
+      const parts = textToDisplay.split(new RegExp(`(${searchQuery})`, 'gi'));
       return parts.map((part, index) => 
         part.toLowerCase() === searchQuery.toLowerCase() ? (
             <span key={index} className="bg-zinc-600 text-white px-0.5 rounded-sm">{part}</span>
@@ -129,22 +201,24 @@ const GoldCard: React.FC<GoldCardProps> = ({
 
   return (
     <div 
-        className={`relative mb-6 transition-transform active:scale-[0.99] select-none touch-pan-y ${isDraggable ? 'cursor-move' : 'cursor-pointer'}`}
+        className={`relative mb-6 transition-all duration-300 ease-in-out active:scale-[0.99] select-none touch-pan-y ${isDraggable ? 'cursor-move' : 'cursor-pointer'} ${isSelectionMode ? 'mr-12' : ''}`}
         draggable={isDraggable && !isSelectionMode}
-        onDragStart={(e) => onDragStart && onDragStart(e, item)}
+        onDragStart={handleDragStartInternal}
         onDragOver={onDragOver}
         onDrop={(e) => onDrop && onDrop(e, item)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onMouseDown={handleStart}
-        onMouseMove={handleMove}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
         onMouseUp={handleEnd}
+        onMouseLeave={handleEnd}
         onClick={handleClick}
+        onContextMenu={handleContextMenu}
         style={{ transform: `translateX(${swipeOffset}px)` }}
     >
-      {/* Pinned Mark - Outside Top Left */}
-      {item.isPinned && !isSelectionMode && (
+      {/* Pinned Mark - Outside Top Left - Visible always if pinned */}
+      {item.isPinned && (
           <div className="absolute -top-3 -left-1 z-20 transform -rotate-45">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
                   <path d="M16 12V4H17V2H7V4H8V12L6 14V16H11V22H13V16H18V14L16 12Z" fill="white"/>
@@ -152,51 +226,56 @@ const GoldCard: React.FC<GoldCardProps> = ({
           </div>
       )}
 
-      {/* 3 Dots - Outside Right */}
-      {!isSelectionMode && (
-          <div 
-              onClick={(e) => { e.stopPropagation(); onMenuClick && onMenuClick(e, item); }}
-              className="absolute -right-8 top-1/2 -translate-y-1/2 p-2 cursor-pointer z-10"
-          >
-              <svg className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity" style={{ color: accentColor }} fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+      {/* Checkmark - Outside Right - Only when IN selection mode AND Selected */}
+      {isSelectionMode && isSelected && (
+          <div className="absolute -right-9 top-1/2 -translate-y-1/2 z-20">
+              <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
           </div>
       )}
 
       <div 
-        className={`border rounded-3xl p-4 relative group transition-colors ${cardBg} min-h-[100px] flex flex-col justify-between`}
+        className={`border rounded-3xl p-4 relative group transition-colors ${cardBg} min-h-[100px] flex flex-col`}
         style={{ borderColor: accentColor }}
       >
-        {/* Top Section */}
-        <div className="flex justify-between items-start relative">
-            <div className="flex-1 pr-8">
-                <p className={`font-mono text-sm leading-relaxed whitespace-pre-wrap break-words line-clamp-2 ${textColor}`}>
+        <div className="relative flex-1">
+            {/* 
+                TEXT CONTAINER 
+                - border-none for "invisible border"
+                - pr-12 to ensure it doesn't touch icons on the right (approx 48px clearance)
+                - pb-2 to ensure it doesn't touch tags at the bottom
+            */}
+            <div className="border-none w-full pr-12 pb-2">
+                <p className={`font-mono text-sm leading-relaxed whitespace-normal break-words line-clamp-2 text-ellipsis overflow-hidden ${textColor}`}>
                     {renderContent()}
                 </p>
             </div>
             
-            {/* Heart Icon - Top Right */}
-            {item.isFavorite && (
-                <div className="absolute top-0 right-0">
-                    <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                </div>
-            )}
+            {/* ICONS CONTAINER - Absolute positioned top right */}
+            <div className="absolute top-0 right-0 flex flex-col items-end space-y-2 pointer-events-none">
+                {/* Heart Icon */}
+                {item.isFavorite && (
+                    <div className="text-red-600">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                    </div>
+                )}
 
-            {/* Type Icon - Right Center (below heart) */}
-            {item.type !== ClipboardType.TEXT && (
-                <div className="absolute top-8 right-0">
-                    <svg className="w-6 h-6" style={{ color: accentColor }} fill={item.type === ClipboardType.PHONE || item.type === ClipboardType.SECURE ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={item.type === ClipboardType.PHONE || item.type === ClipboardType.SECURE ? 0 : 2}>
-                        {getIcon(item.type)}
-                    </svg>
-                </div>
-            )}
+                {/* Type Icon */}
+                {item.type !== ClipboardType.TEXT && (
+                    <div style={{ color: accentColor }}>
+                        <svg className="w-6 h-6" fill={item.type === ClipboardType.PHONE || item.type === ClipboardType.SECURE ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={item.type === ClipboardType.PHONE || item.type === ClipboardType.SECURE ? 0 : 2}>
+                            {getIcon(item.type)}
+                        </svg>
+                    </div>
+                )}
+            </div>
         </div>
         
         {/* Bottom Section - Hashtags and Date aligned */}
-        <div className="flex justify-between items-center mt-3 pt-1">
+        <div className="flex justify-between items-center mt-2 pt-1 border-t border-transparent">
             <div className="flex items-center text-xs flex-wrap gap-2">
                 {item.tags.map((tag) => (
                     <span key={tag} className={`${tagColor}`}>{tag}</span>
@@ -204,18 +283,6 @@ const GoldCard: React.FC<GoldCardProps> = ({
             </div>
             <span className={`text-[10px] ${tagColor} whitespace-nowrap ml-2`}>{item.timestamp}</span>
         </div>
-
-        {isSelectionMode && (
-            <div className={`absolute inset-0 z-20 flex items-center justify-end pr-4 rounded-3xl transition-colors ${isSelected ? 'ring-2' : 'bg-black/40'}`} style={{ backgroundColor: isSelected ? `${accentColor}1A` : undefined, borderColor: isSelected ? accentColor : undefined, '--tw-ring-color': isSelected ? accentColor : undefined } as React.CSSProperties}>
-                {isSelected ? (
-                    <svg className="w-8 h-8 drop-shadow-md" style={{ color: isDarkTheme ? 'white' : accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                ) : (
-                    <div className="w-6 h-6 rounded-full border-2 border-gray-500 bg-black/50"></div>
-                )}
-            </div>
-        )}
       </div>
     </div>
   );

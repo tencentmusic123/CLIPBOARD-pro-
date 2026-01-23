@@ -5,11 +5,12 @@ import { useSettings } from '../context/SettingsContext';
 
 interface EditScreenProps {
   item: ClipboardItem;
+  isNew?: boolean;
   onBack: () => void;
-  onSave: () => void;
+  onSave: (item?: ClipboardItem) => void;
 }
 
-const EditScreen: React.FC<EditScreenProps> = ({ item, onBack, onSave }) => {
+const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) => {
   const { accentColor, isDarkTheme, isAiSupportOn } = useSettings();
   
   // --- Local State ---
@@ -92,14 +93,51 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, onBack, onSave }) => {
   // --- Save Handler ---
   const performSave = async (destination: 'CLIPBOARD' | 'NOTES') => {
       const content = editorRef.current?.innerText || '';
-      await clipboardRepository.updateItem(item.id, { 
-          title, content, timestamp: new Date().toLocaleString(),
-          metadata: { ...item.metadata, source: destination }
-      });
-      if (destination === 'CLIPBOARD') navigator.clipboard.writeText(content);
-      else await clipboardRepository.addTagsToItems([item.id], ['#notes']);
+      const category = destination === 'CLIPBOARD' ? 'clipboard' : 'notes';
+      const timestamp = new Date().toLocaleString();
+      
+      let finalItem: ClipboardItem;
+
+      if (isNew) {
+         finalItem = {
+             ...item,
+             id: Date.now().toString(),
+             title,
+             content,
+             timestamp,
+             category,
+             tags: category === 'notes' ? ['#notes'] : []
+         };
+         await clipboardRepository.addItem(finalItem);
+      } else {
+          finalItem = {
+              ...item,
+              title,
+              content,
+              timestamp,
+              category: category
+          };
+          await clipboardRepository.updateItem(item.id, { 
+              title, 
+              content, 
+              timestamp,
+              category: category
+          });
+          
+          if (destination === 'NOTES') {
+              await clipboardRepository.addTagsToItems([item.id], ['#notes']);
+              // Locally update tags for the callback
+              const newTags = Array.from(new Set([...finalItem.tags, '#notes']));
+              finalItem.tags = newTags;
+          }
+      }
+      
+      if (destination === 'CLIPBOARD') {
+          navigator.clipboard.writeText(content);
+      }
+      
       setShowSaveDialog(false);
-      onSave();
+      onSave(finalItem);
   };
 
   // --- Render Styles ---

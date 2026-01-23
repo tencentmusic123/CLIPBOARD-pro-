@@ -147,7 +147,9 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
                 </div>
             ) : (
                 <h1 className={`text-xl font-normal truncate pr-4 ${isDarkTheme ? 'text-zinc-300' : 'text-gray-800'}`}>
-                    {currentItem.content.substring(0, 20)}{currentItem.content.length > 20 ? '...' : ''}
+                    {currentItem.title && currentItem.title.trim() 
+                        ? currentItem.title 
+                        : (currentItem.content.substring(0, 20) + (currentItem.content.length > 20 ? '...' : ''))}
                 </h1>
             )}
         </div>

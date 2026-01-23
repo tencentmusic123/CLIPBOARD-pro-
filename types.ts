@@ -12,6 +12,7 @@ export interface ClipboardItem {
   content: string;
   displayContent?: string; // For masked content
   type: ClipboardType;
+  category: 'clipboard' | 'notes'; // Strict separation
   timestamp: string; // ISO string or formatted time string for this demo
   tags: string[];
   isPinned: boolean;
@@ -19,7 +20,6 @@ export interface ClipboardItem {
   isDeleted?: boolean; // New flag for trash
   metadata?: {
     label?: string; // e.g. "Work", "Home"
-    source?: 'CLIPBOARD' | 'NOTES';
   };
 }
 

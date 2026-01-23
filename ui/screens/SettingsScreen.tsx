@@ -53,7 +53,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
   const handleFeedbackSubmit = () => {
       if (!feedbackText.trim()) return;
-      const subject = encodeURIComponent("Clipboard Pro Feedback");
+      const subject = encodeURIComponent("CLIPBOARD MAX Feedback");
       const body = encodeURIComponent(feedbackText);
       window.location.href = `mailto:tencentmusic123@gmail.com?subject=${subject}&body=${body}`;
   };
@@ -74,7 +74,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
              </svg>
          </button>
-         <h1 className="text-xl tracking-wider font-normal" style={{ color: accentColor }}>CLIPBOARD PRO</h1>
+         <h1 className="text-xl tracking-wider font-normal" style={{ color: accentColor }}>CLIPBOARD MAX</h1>
       </header>
 
       <main className="flex-1 overflow-y-auto p-6 space-y-8">
