@@ -361,4 +361,5 @@ class ClipboardRepository {
   }
 }
 
+export { ClipboardRepository };
 export const clipboardRepository = new ClipboardRepository();
