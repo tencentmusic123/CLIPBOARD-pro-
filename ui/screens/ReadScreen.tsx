@@ -22,10 +22,15 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  // Hashtag Logic
   const [isHashtagOverlayOpen, setIsHashtagOverlayOpen] = useState(false);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set(item.tags));
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   
   const [currentItem, setCurrentItem] = useState(item);
-  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set(item.tags));
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,7 +39,10 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
       setSelectedTags(new Set(item.tags));
   }, [item]);
 
-  const availableTags = ['#work', '#personal', '#important', '#todo', '#ideas', '#links'];
+  const showToast = (msg: string) => {
+      setToastMessage(msg);
+      setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const smartItems = useMemo<SmartItem[]>(() => {
     if (!isSmartRecognitionOn) return [];
@@ -78,9 +86,20 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
   const handleMenuAction = async (action: string) => {
       switch(action) {
           case 'EDIT': onEdit(currentItem); break;
+          case 'COPY':
+              try {
+                  await navigator.clipboard.writeText(currentItem.content);
+                  showToast("Copied to clipboard");
+              } catch (e) {
+                  showToast("Failed to copy");
+              }
+              break;
           case 'SHARE': 
               if (navigator.share) navigator.share({ title: 'Clip', text: currentItem.content });
-              else { navigator.clipboard.writeText(currentItem.content); alert("Copied to clipboard"); }
+              else { 
+                  navigator.clipboard.writeText(currentItem.content); 
+                  showToast("Copied to clipboard");
+              }
               break;
           case 'EXPORT': 
               const blob = new Blob([currentItem.content], {type: 'text/plain'});
@@ -90,21 +109,52 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
               a.download = `clip_${currentItem.id}.txt`;
               a.click();
               break;
-          case 'HASHTAG': setIsHashtagOverlayOpen(true); break;
+          case 'TOGGLE_CATEGORY_COPY':
+               const targetCategory = currentItem.category === 'clipboard' ? 'notes' : 'clipboard';
+               
+               // If copying TO clipboard, try to sync with system
+               if (targetCategory === 'clipboard') {
+                   try {
+                       await navigator.clipboard.writeText(currentItem.content);
+                   } catch (e) {
+                       console.warn("System clipboard write failed");
+                   }
+               }
+
+               await clipboardRepository.addItem({
+                   ...currentItem,
+                   id: Date.now().toString(),
+                   category: targetCategory,
+                   tags: [...currentItem.tags, '#copy'],
+                   timestamp: new Date().toLocaleString()
+               });
+               showToast(`Copied to ${targetCategory === 'clipboard' ? 'Clipboard' : 'Notes'}`);
+               break;
+          case 'HASHTAG': 
+               // Fetch fresh tags before showing overlay
+               const tags = await clipboardRepository.getUniqueTags();
+               setAllTags(tags);
+               // Sync selected state with current item
+               setSelectedTags(new Set(currentItem.tags));
+               setIsHashtagOverlayOpen(true); 
+               break;
           case 'FAVORITE':
               const newPinnedState = !currentItem.isPinned;
               await clipboardRepository.pinItem(currentItem.id, newPinnedState);
               setCurrentItem({...currentItem, isPinned: newPinnedState});
+              showToast(newPinnedState ? "Added to Favorites" : "Removed from Favorites");
               break;
       }
       setIsMenuOpen(false);
   };
 
   const handleSaveHashtags = async () => {
-      await clipboardRepository.addTagsToItems([currentItem.id], Array.from(selectedTags));
+      // Logic to replace tags for this single item
+      await clipboardRepository.replaceTagsForItems([currentItem.id], Array.from(selectedTags));
       const updatedItem = { ...currentItem, tags: Array.from(selectedTags) };
       setCurrentItem(updatedItem); 
       setIsHashtagOverlayOpen(false);
+      showToast("Tags updated");
   };
 
   // Helper for search highlighting on plain text
@@ -188,11 +238,15 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
       {isMenuOpen && (
           <div className="absolute top-16 right-4 z-50 w-56 animate-fade-in-down">
               <div className={`border-2 rounded-xl overflow-hidden shadow-2xl flex flex-col font-mono text-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
-                  <MenuBtn label="EDIT" onClick={() => handleMenuAction('EDIT')} isDark={isDarkTheme} />
+                  <MenuBtn label="Copy" onClick={() => handleMenuAction('COPY')} isDark={isDarkTheme} />
+                  <MenuBtn label="Edit" onClick={() => handleMenuAction('EDIT')} isDark={isDarkTheme} />
                   <MenuBtn label="Share" onClick={() => handleMenuAction('SHARE')} isDark={isDarkTheme} />
                   <MenuBtn label="Export" onClick={() => handleMenuAction('EXPORT')} isDark={isDarkTheme} />
-                  <MenuBtn label="Copy to Notes" onClick={() => handleMenuAction('COPY_TO_NOTES')} isDark={isDarkTheme} />
-                  <MenuBtn label="Print" onClick={() => handleMenuAction('PRINT')} isDark={isDarkTheme} />
+                  <MenuBtn 
+                    label={currentItem.category === 'clipboard' ? 'Copy to Notes' : 'Copy to Clipboard'} 
+                    onClick={() => handleMenuAction('TOGGLE_CATEGORY_COPY')} 
+                    isDark={isDarkTheme} 
+                  />
                   <MenuBtn label="Add a Hashtag" onClick={() => handleMenuAction('HASHTAG')} isDark={isDarkTheme} />
                   <MenuBtn label={currentItem.isPinned ? "Remove Favorite" : "Add to Favorite"} onClick={() => handleMenuAction('FAVORITE')} isDark={isDarkTheme} />
               </div>
@@ -224,6 +278,64 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
          </div>
          <div className="h-32"></div>
       </main>
+
+      {/* --- TOAST NOTIFICATION --- */}
+      {toastMessage && (
+          <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in-up">
+              <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-700 text-white px-6 py-3 rounded-full shadow-2xl flex items-center space-x-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                  <span className="text-xs font-bold tracking-widest uppercase">{toastMessage}</span>
+              </div>
+          </div>
+      )}
+
+      {/* --- HASHTAG OVERLAY --- */}
+      {isHashtagOverlayOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+             <div className={`border rounded-2xl p-6 w-full max-w-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+                <h3 className="text-lg mb-4 text-center font-bold tracking-widest uppercase" style={{ color: accentColor }}>Manage Tags</h3>
+                
+                <div className="flex flex-wrap gap-2 mb-6 max-h-60 overflow-y-auto">
+                    {allTags.map(tag => (
+                        <button 
+                            key={tag}
+                            onClick={() => {
+                                const newSet = new Set(selectedTags);
+                                if (newSet.has(tag)) newSet.delete(tag);
+                                else newSet.add(tag);
+                                setSelectedTags(newSet);
+                            }}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors`}
+                            style={{ 
+                                borderColor: selectedTags.has(tag) ? accentColor : (isDarkTheme ? '#333' : '#ddd'),
+                                backgroundColor: selectedTags.has(tag) ? `${accentColor}20` : 'transparent',
+                                color: selectedTags.has(tag) ? accentColor : (isDarkTheme ? '#aaa' : '#666')
+                            }}
+                        >
+                            {tag}
+                        </button>
+                    ))}
+                    {allTags.length === 0 && <p className="w-full text-center text-xs opacity-50">No tags found</p>}
+                </div>
+
+                <div className="flex justify-between items-center px-2">
+                    <button 
+                        onClick={() => setIsHashtagOverlayOpen(false)} 
+                        className={`text-sm ${isDarkTheme ? 'text-zinc-500 hover:text-white' : 'text-gray-500 hover:text-black'}`}
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={handleSaveHashtags} 
+                        className="text-sm font-bold" 
+                        style={{ color: accentColor }}
+                    >
+                        Save
+                    </button>
+                </div>
+             </div>
+        </div>
+      )}
 
       {/* --- SMART SELECT OVERLAY --- */}
       {isSmartMenuOpen && (

@@ -13,6 +13,10 @@ interface SettingsContextType {
   toggleSmartRecognition: () => void;
   isAiSupportOn: boolean;
   toggleAiSupport: () => void;
+  
+  // Clipboard Sync
+  clipboardSyncEnabled: boolean;
+  setClipboardSyncEnabled: (enabled: boolean) => void;
 
   // Auto Backup
   autoBackupFrequency: string;
@@ -30,6 +34,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   
   const [isSmartRecognitionOn, setIsSmartRecognitionOn] = useState(true);
   const [isAiSupportOn, setIsAiSupportOn] = useState(true);
+  
+  const [clipboardSyncEnabled, setClipboardSyncEnabled] = useState(false);
 
   const [autoBackupFrequency, setAutoBackupFrequency] = useState('Off');
   const [backupDestination, setBackupDestination] = useState('Google');
@@ -52,6 +58,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       toggleSmartRecognition,
       isAiSupportOn,
       toggleAiSupport,
+      clipboardSyncEnabled,
+      setClipboardSyncEnabled,
       autoBackupFrequency,
       setAutoBackupFrequency,
       backupDestination,

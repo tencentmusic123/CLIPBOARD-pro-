@@ -87,13 +87,15 @@ const TagDetailScreen: React.FC<TagDetailScreenProps> = ({ tag, onBack, onRead }
   };
 
   const textColor = isDarkTheme ? 'text-white' : 'text-black';
-  const bgColor = isDarkTheme ? 'bg-black' : 'bg-white';
+  const bgColor = isDarkTheme ? 'bg-black' : 'bg-gray-50';
+  const headerBg = isDarkTheme ? 'bg-black/80 border-white/5' : 'bg-white/80 border-black/5';
+  const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-gray-200';
 
   return (
     <div className={`h-full w-full flex flex-col relative animate-fade-in font-sans ${bgColor} ${textColor}`}>
       
       {/* --- HEADER --- */}
-      <header className={`px-4 py-4 flex items-center justify-between sticky top-0 z-20 border-b h-16 flex-shrink-0 ${isDarkTheme ? 'bg-black/95 border-zinc-800' : 'bg-white/95 border-gray-200'}`}>
+      <header className={`px-4 py-4 flex items-center justify-between sticky top-0 z-20 border-b h-16 flex-shrink-0 backdrop-blur-xl ${headerBg}`}>
         <div className="flex items-center w-full">
             <button onClick={() => isSelectionMode ? setIsSelectionMode(false) : onBack()} className={`hover:opacity-80 transition-opacity mr-4 ${textColor}`} style={{ color: isSelectionMode ? undefined : accentColor }}>
                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -134,7 +136,7 @@ const TagDetailScreen: React.FC<TagDetailScreenProps> = ({ tag, onBack, onRead }
                          <button onClick={() => setShowMoreOptions(!showMoreOptions)} className="hover:opacity-80 relative" style={{ color: accentColor }}>
                             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                              {showMoreOptions && (
-                                 <div className={`absolute right-0 top-8 border rounded-lg w-32 shadow-xl z-50 py-1 ${isDarkTheme ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+                                 <div className={`absolute right-0 top-8 border rounded-lg w-32 shadow-xl z-50 py-1 backdrop-blur-xl ${overlayBg}`} style={{ borderColor: accentColor }}>
                                      <div className={`px-4 py-2 text-sm text-left cursor-pointer ${isDarkTheme ? 'hover:bg-black text-white' : 'hover:bg-gray-100 text-black'}`}>Export</div>
                                      <div className={`px-4 py-2 text-sm text-left cursor-pointer ${isDarkTheme ? 'hover:bg-black text-white' : 'hover:bg-gray-100 text-black'}`}>Merge</div>
                                  </div>

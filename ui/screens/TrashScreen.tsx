@@ -126,13 +126,15 @@ const TrashScreen: React.FC<TrashScreenProps> = ({ onBack }) => {
 
   // --- Render Helpers ---
   const textColor = isDarkTheme ? 'text-white' : 'text-black';
-  const bgColor = isDarkTheme ? 'bg-black' : 'bg-white';
+  const bgColor = isDarkTheme ? 'bg-black' : 'bg-gray-50';
+  const headerBg = isDarkTheme ? 'bg-black/80 border-white/5' : 'bg-white/80 border-black/5';
+  const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-gray-200';
 
   return (
     <div className={`h-full w-full flex flex-col relative animate-fade-in font-sans ${bgColor} ${textColor}`} onClick={() => setIsFilterOpen(false)}>
       
       {/* --- HEADER --- */}
-      <header className={`px-4 py-4 flex items-center justify-between sticky top-0 z-20 border-b h-16 flex-shrink-0 ${isDarkTheme ? 'bg-black/95 border-zinc-800' : 'bg-white/95 border-gray-200'}`}>
+      <header className={`px-4 py-4 flex items-center justify-between sticky top-0 z-20 border-b h-16 flex-shrink-0 backdrop-blur-xl ${headerBg}`}>
         <div className="flex items-center">
             <button onClick={() => isSelectionMode ? setIsSelectionMode(false) : onBack()} className={`hover:opacity-80 transition-opacity mr-3 ${textColor}`} style={{ color: isSelectionMode ? undefined : accentColor }}>
                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -174,15 +176,10 @@ const TrashScreen: React.FC<TrashScreenProps> = ({ onBack }) => {
         )}
       </header>
 
-      {/* Decorative Line */}
-      <div className="h-[2px] w-full shadow-[0_0_10px_rgba(212,175,55,0.5)] z-10" style={{ backgroundColor: `${accentColor}80` }}></div>
-
       {/* --- FILTER DROPDOWN OVERLAY --- */}
       {isFilterOpen && !isSelectionMode && (
         <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-0 left-0 z-30 px-4 py-2 animate-fade-in-down">
-             <div className={`border-2 rounded-3xl p-5 shadow-2xl relative ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
-                {/* Arrow Pointer */}
-                <div className="absolute -top-3 right-5 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[10px]" style={{ borderBottomColor: accentColor }}></div>
+             <div className={`border-2 rounded-3xl p-5 shadow-2xl relative backdrop-blur-xl ${overlayBg}`} style={{ borderColor: accentColor }}>
                 
                 <div className="flex items-center justify-center mb-6">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
@@ -284,9 +281,12 @@ const TrashScreen: React.FC<TrashScreenProps> = ({ onBack }) => {
       {/* --- MAIN CONTENT --- */}
       <main className="flex-1 px-4 py-6 overflow-y-auto no-scrollbar relative z-0">
           {loading ? (
-             <div className="text-center mt-20 font-mono" style={{ color: accentColor }}>Loading Trash...</div>
+             <div className="text-center mt-20 font-mono text-sm tracking-widest opacity-60 animate-pulse" style={{ color: accentColor }}>LOADING TRASH...</div>
           ) : filteredItems.length === 0 ? (
-             <div className="text-gray-500 text-center mt-20 font-light italic">No items found</div>
+             <div className="flex flex-col items-center justify-center mt-32 opacity-40">
+                 <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                 <span className="font-light tracking-wide">Trash is empty</span>
+             </div>
           ) : (
             filteredItems.map(item => {
                 const isSelected = selectedIds.has(item.id);

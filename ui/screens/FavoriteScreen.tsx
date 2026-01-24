@@ -215,13 +215,15 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
 
   // --- Render ---
   const textColor = isDarkTheme ? 'text-white' : 'text-black';
-  const bgColor = isDarkTheme ? 'bg-black' : 'bg-white';
+  const bgColor = isDarkTheme ? 'bg-black' : 'bg-gray-50';
+  const headerBg = isDarkTheme ? 'bg-black/80 border-white/5' : 'bg-white/80 border-black/5';
+  const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-gray-200';
 
   return (
     <div className={`h-full w-full flex flex-col relative animate-fade-in font-sans ${bgColor} ${textColor}`} onClick={() => setShowMoreOptions(false)}>
       
       {/* --- HEADER --- */}
-      <header className={`px-4 py-4 flex items-center justify-between sticky top-0 z-20 border-b h-16 flex-shrink-0 ${isDarkTheme ? 'bg-black/95 border-zinc-800' : 'bg-white/95 border-gray-200'}`}>
+      <header className={`px-4 py-4 flex items-center justify-between sticky top-0 z-20 border-b h-16 flex-shrink-0 backdrop-blur-xl ${headerBg}`}>
         <div className="flex items-center">
             <button onClick={() => isSelectionMode ? setIsSelectionMode(false) : onBack()} className={`hover:opacity-80 transition-opacity mr-3 ${textColor}`} style={{ color: isSelectionMode ? undefined : accentColor }}>
                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -285,14 +287,10 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
         )}
       </header>
 
-      {/* Decorative Line */}
-      <div className="h-[2px] w-full shadow-[0_0_10px_rgba(212,175,55,0.5)] z-10" style={{ backgroundColor: `${accentColor}80` }}></div>
-
       {/* --- FILTER DROPDOWN OVERLAY --- */}
       {isFilterOpen && !isSelectionMode && (
         <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-0 left-0 z-30 px-4 py-2 animate-fade-in-down">
-             <div className={`border-2 rounded-3xl p-5 shadow-2xl relative ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
-                <div className="absolute -top-3 right-5 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[10px]" style={{ borderBottomColor: accentColor }}></div>
+             <div className={`border-2 rounded-3xl p-5 shadow-2xl relative backdrop-blur-xl ${overlayBg}`} style={{ borderColor: accentColor }}>
                 <div className="flex items-center justify-center mb-6">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
                         <path fillRule="evenodd" clipRule="evenodd" d="M3 4C3 3.44772 3.44772 3 4 3H20C20.5523 3 21 3.44772 21 4V6.58579C21 6.851 20.8946 7.10536 20.7071 7.29289L14.2929 13.7071C14.1054 13.8946 14 14.149 14 14.4142V17L10 21V14.4142C10 14.149 9.89464 13.8946 9.70711 13.7071L3.29289 7.29289C3.10536 7.10536 3 6.851 3 6.58579V4Z" fill="#EAC336"/>
@@ -348,7 +346,7 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
       {/* --- MORE OPTIONS MENU OVERLAY --- */}
       {showMoreOptions && (
           <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-4 z-40 animate-fade-in-down w-56">
-              <div className={`border rounded-xl overflow-hidden shadow-2xl flex flex-col ${isDarkTheme ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+              <div className={`border rounded-xl overflow-hidden shadow-2xl flex flex-col backdrop-blur-xl ${overlayBg}`} style={{ borderColor: accentColor }}>
                   <MenuItem label="Merge" onClick={handleMerge} textColor={textColor} />
                   <MenuItem label="Share" onClick={handleShare} textColor={textColor} />
                   <MenuItem label="Export" onClick={handleExport} textColor={textColor} />
@@ -362,9 +360,12 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
       {/* --- MAIN CONTENT --- */}
       <main className="flex-1 px-4 py-6 overflow-y-auto no-scrollbar relative z-0">
           {loading ? (
-             <div className="text-center mt-20 font-mono" style={{ color: accentColor }}>Loading Favorites...</div>
+             <div className="text-center mt-20 font-mono text-sm tracking-widest opacity-60 animate-pulse" style={{ color: accentColor }}>LOADING FAVORITES...</div>
           ) : filteredItems.length === 0 ? (
-             <div className="text-gray-500 text-center mt-20 font-light italic">No favorites yet</div>
+             <div className="flex flex-col items-center justify-center mt-32 opacity-40">
+                 <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                 <span className="font-light tracking-wide">No favorites yet</span>
+             </div>
           ) : (
             filteredItems.map(item => {
                 const isSelected = selectedIds.has(item.id);

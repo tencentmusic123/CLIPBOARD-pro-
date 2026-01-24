@@ -321,11 +321,11 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
   };
 
   // --- Render Styles ---
-  const bgColor = isDarkTheme ? 'bg-black' : 'bg-gray-100';
+  const bgColor = isDarkTheme ? 'bg-black' : 'bg-[#F2F2F7]';
   const textColor = isDarkTheme ? 'text-white' : 'text-black';
-  const headerBg = isDarkTheme ? 'bg-black border-zinc-900' : 'bg-white border-gray-200';
-  const toolbarBg = isDarkTheme ? 'bg-[#121212] border-zinc-800' : 'bg-white border-gray-300';
-  const toolbarBtnClass = `w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl transition-all duration-200`;
+  const headerBg = isDarkTheme ? 'bg-black/80 border-zinc-900' : 'bg-white/80 border-gray-200';
+  const toolbarBg = isDarkTheme ? 'bg-[#121212] border-zinc-800' : 'bg-white border-gray-200';
+  const toolbarBtnClass = `w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-200`;
   
   const getBtnStyle = (isActive: boolean) => {
       if (isDarkTheme) {
@@ -343,8 +343,8 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
     <div className={`h-screen w-full flex flex-col animate-fade-in font-sans relative ${bgColor} ${textColor}`}>
       
       {/* --- HEADER --- */}
-      <header className={`px-4 py-3 flex items-center justify-between border-b sticky top-0 z-30 ${headerBg}`}>
-        <div className="flex items-center flex-1">
+      <header className={`px-4 py-3 flex items-center justify-between border-b sticky top-0 z-30 backdrop-blur-xl ${headerBg}`}>
+        <div className="flex items-center flex-1 max-w-4xl mx-auto w-full">
             <button onClick={onBack} className={`mr-3 ${isDarkTheme ? 'text-zinc-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -357,49 +357,51 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                 placeholder="TITLE (optional)"
                 className={`bg-transparent text-lg focus:outline-none w-full font-medium ${isDarkTheme ? 'text-zinc-300 placeholder-zinc-600' : 'text-gray-800 placeholder-gray-400'}`}
             />
-        </div>
-        
-        <div className="flex items-center space-x-4">
-             <div className={`flex items-center space-x-3 ${isDarkTheme ? 'text-zinc-400' : 'text-gray-500'}`}>
-                 <button 
-                    onMouseDown={handleToolbarMouseDown}
-                    onClick={performUndo} 
-                    className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}
-                 >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
-                 </button>
-                 <button 
-                    onMouseDown={handleToolbarMouseDown}
-                    onClick={performRedo} 
-                    className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}
-                 >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg>
-                 </button>
-             </div>
-             <button onClick={() => setShowSaveDialog(true)} className="font-medium text-lg hover:opacity-80 transition-colors px-2" style={{ color: accentColor }}>Save</button>
+            
+            <div className="flex items-center space-x-4 pl-4">
+                 <div className={`flex items-center space-x-3 ${isDarkTheme ? 'text-zinc-400' : 'text-gray-500'}`}>
+                     <button 
+                        onMouseDown={handleToolbarMouseDown}
+                        onClick={performUndo} 
+                        className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}
+                     >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                     </button>
+                     <button 
+                        onMouseDown={handleToolbarMouseDown}
+                        onClick={performRedo} 
+                        className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}
+                     >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg>
+                     </button>
+                 </div>
+                 <button onClick={() => setShowSaveDialog(true)} className="font-medium text-lg hover:opacity-80 transition-colors px-2" style={{ color: accentColor }}>Save</button>
+            </div>
         </div>
       </header>
 
       {/* --- CONTENT AREA --- */}
       <main className="flex-1 relative overflow-y-auto">
-        <div 
-            ref={editorRef}
-            contentEditable
-            spellCheck={true}
-            onInput={handleInput}
-            onKeyUp={handleEditorInteraction}
-            onMouseUp={handleEditorInteraction}
-            onTouchEnd={handleEditorInteraction}
-            className={`w-full min-h-full p-6 focus:outline-none leading-relaxed whitespace-pre-wrap pb-48 ${isDarkTheme ? 'bg-black text-zinc-100' : 'bg-gray-50 text-gray-900'}`}
-            style={{ fontSize: `${fontSize}px` }}
-        />
-        {!editorRef.current?.innerText && (
-            <div className="absolute top-6 left-6 text-zinc-600 pointer-events-none text-base">Type here...</div>
-        )}
+        <div className="max-w-4xl mx-auto w-full min-h-full flex flex-col">
+            <div 
+                ref={editorRef}
+                contentEditable
+                spellCheck={true}
+                onInput={handleInput}
+                onKeyUp={handleEditorInteraction}
+                onMouseUp={handleEditorInteraction}
+                onTouchEnd={handleEditorInteraction}
+                className={`w-full flex-1 p-6 focus:outline-none leading-relaxed whitespace-pre-wrap pb-48 ${isDarkTheme ? 'bg-black text-zinc-100' : 'bg-[#F2F2F7] text-gray-900'}`}
+                style={{ fontSize: `${fontSize}px` }}
+            />
+            {!editorRef.current?.innerText && (
+                <div className="absolute top-6 left-6 text-zinc-600 pointer-events-none text-base pl-4 md:pl-0">Type here...</div>
+            )}
+        </div>
 
         {/* Help Overlay */}
         {isHelpOpen && (
-            <div className={`absolute inset-x-4 top-4 bottom-4 border rounded-2xl p-6 z-40 overflow-y-auto backdrop-blur-md shadow-2xl animate-fade-in ${isDarkTheme ? 'bg-[#121212]/95 border-gold/50' : 'bg-white/95 border-gray-300'}`} style={{ borderColor: isDarkTheme ? undefined : accentColor }}>
+            <div className={`absolute inset-x-4 top-4 bottom-4 border rounded-2xl p-6 z-40 overflow-y-auto backdrop-blur-md shadow-2xl animate-fade-in max-w-lg mx-auto ${isDarkTheme ? 'bg-[#121212]/95 border-gold/50' : 'bg-white/95 border-gray-300'}`} style={{ borderColor: isDarkTheme ? undefined : accentColor }}>
                  <h3 className="text-lg font-bold mb-4" style={{ color: accentColor }}>AI Tools Guide</h3>
                  <ul className={`space-y-4 text-sm leading-relaxed font-light ${isDarkTheme ? 'text-zinc-300' : 'text-gray-700'}`}>
                     <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Remove Duplicates:</strong> Finds and deletes any repeated lines to make lists shorter.</li>
@@ -413,7 +415,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
 
       {/* --- AI MENU OVERLAY --- */}
       {isAiMenuOpen && (
-          <div className="absolute bottom-20 left-4 right-4 z-50 animate-fade-in-up">
+          <div className="absolute bottom-24 left-4 right-4 z-50 animate-fade-in-up max-w-2xl mx-auto">
                <div className="flex justify-end mb-2 mr-1">
                    <button 
                        onClick={() => setIsHelpOpen(!isHelpOpen)}
@@ -433,25 +435,22 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
       )}
 
       {/* --- TOOLBAR --- */}
-      <div className={`border-t flex items-center w-full sticky bottom-0 z-40 ${toolbarBg}`}>
-          
-          {/* Fixed AI Button */}
-          {isAiSupportOn && (
-             <div className="pl-4 py-4 pr-2 border-r border-zinc-700/30">
-                <button 
-                  onClick={() => { setIsAiMenuOpen(!isAiMenuOpen); if (isAiMenuOpen) setIsHelpOpen(false); }}
-                  className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors ${isAiMenuOpen ? 'text-black' : ''}`}
-                  style={{ backgroundColor: isAiMenuOpen ? accentColor : 'transparent', color: isAiMenuOpen ? 'black' : accentColor }}
-                >
-                   <span className="font-bold text-xl font-serif italic">Ai</span>
-                </button>
-             </div>
-          )}
-
-          {/* Scrollable Actions */}
-          <div className="flex-1 overflow-x-auto no-scrollbar flex items-center space-x-2 px-4 py-4">
+      <div className={`border-t flex items-center justify-center w-full sticky bottom-0 z-40 ${toolbarBg}`}>
+          <div className="flex items-center w-full max-w-3xl px-4 py-4 justify-between">
               
-              {/* Bold */}
+              {/* AI Button */}
+              {isAiSupportOn && (
+                 <button 
+                   onClick={() => { setIsAiMenuOpen(!isAiMenuOpen); if (isAiMenuOpen) setIsHelpOpen(false); }}
+                   className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors ${isAiMenuOpen ? 'text-black' : ''}`}
+                   style={{ backgroundColor: isAiMenuOpen ? accentColor : 'transparent', color: isAiMenuOpen ? 'black' : accentColor }}
+                 >
+                    <span className="font-bold text-xl font-serif italic">Ai</span>
+                 </button>
+              )}
+
+              {/* Formatting Tools - Evenly Spaced */}
+              
               <button 
                 onMouseDown={handleToolbarMouseDown}
                 onClick={() => execCmd('bold')} 
@@ -461,7 +460,6 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                   <span className="font-bold font-serif text-xl">B</span>
               </button>
               
-              {/* Italic */}
               <button 
                 onMouseDown={handleToolbarMouseDown}
                 onClick={() => execCmd('italic')} 
@@ -471,7 +469,6 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                   <span className="italic font-serif text-xl">I</span>
               </button>
               
-              {/* Underline */}
               <button 
                 onMouseDown={handleToolbarMouseDown}
                 onClick={() => execCmd('underline')} 
@@ -481,7 +478,6 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                   <span className="underline font-serif text-xl">U</span>
               </button>
               
-              {/* Strikethrough */}
               <button 
                 onMouseDown={handleToolbarMouseDown}
                 onClick={() => execCmd('strikeThrough')} 
@@ -491,8 +487,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                   <span className="line-through font-serif text-xl">S</span>
               </button>
 
-              {/* Case Converter - Replaces 3-dot menu */}
-               <button 
+              <button 
                   onMouseDown={handleToolbarMouseDown}
                   onClick={handleChangeCase}
                   className={toolbarBtnClass}

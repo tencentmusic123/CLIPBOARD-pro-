@@ -15,6 +15,12 @@ import { ScreenName, ClipboardItem, ClipboardType } from './types';
 // App Content Component to use Context
 const AppContent: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('SPLASH');
+  // Track previous screen for smarter back navigation
+  const [historyStack, setHistoryStack] = useState<ScreenName[]>([]);
+  
+  // Lifted State for Home Tab persistence
+  const [activeHomeTab, setActiveHomeTab] = useState<'clipboard' | 'notes'>('clipboard');
+
   const [selectedItem, setSelectedItem] = useState<ClipboardItem | null>(null);
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [isNewItem, setIsNewItem] = useState(false);
@@ -28,11 +34,23 @@ const AppContent: React.FC = () => {
   }, []);
 
   const navigateTo = (screen: ScreenName) => {
+    setHistoryStack(prev => [...prev, currentScreen]);
     setCurrentScreen(screen);
+  };
+
+  const goBack = () => {
+      if (historyStack.length > 0) {
+          const prev = historyStack[historyStack.length - 1];
+          setHistoryStack(prevStack => prevStack.slice(0, -1));
+          setCurrentScreen(prev);
+      } else {
+          setCurrentScreen('HOME');
+      }
   };
 
   const handleReadItem = (item: ClipboardItem) => {
     setSelectedItem(item);
+    setHistoryStack(prev => [...prev, currentScreen]);
     setCurrentScreen('READ');
   };
 
@@ -41,61 +59,62 @@ const AppContent: React.FC = () => {
       id: Date.now().toString(),
       content: '',
       type: ClipboardType.TEXT,
-      category: 'clipboard', // Default category
+      category: activeHomeTab, // Create in current tab
       timestamp: new Date().toLocaleString(),
-      tags: [],
+      tags: activeHomeTab === 'notes' ? ['#notes'] : [],
       isPinned: false,
       isFavorite: false,
       isDeleted: false,
     };
     setSelectedItem(newItem);
     setIsNewItem(true);
+    setHistoryStack(prev => [...prev, currentScreen]);
     setCurrentScreen('EDIT');
   };
 
   const handleEditItem = (item: ClipboardItem) => {
     setSelectedItem(item);
     setIsNewItem(false);
+    setHistoryStack(prev => [...prev, currentScreen]);
     setCurrentScreen('EDIT');
   };
 
   const handleSelectTag = (tag: string) => {
       setSelectedTag(tag);
+      setHistoryStack(prev => [...prev, currentScreen]);
       setCurrentScreen('TAG_DETAILS');
   };
 
   const handleSaveEdit = (savedItem?: ClipboardItem) => {
     if (savedItem) {
         setSelectedItem(savedItem);
+        // If we saved a new item, ensure we are on the correct tab to see it
+        if (isNewItem) {
+             setActiveHomeTab(savedItem.category);
+        }
     }
-    if (isNewItem) {
-        setCurrentScreen('HOME');
-    } else {
-        setCurrentScreen('READ');
-    }
+    goBack(); 
   };
 
   const renderScreen = () => {
     switch (currentScreen) {
       case 'SPLASH': return <SplashScreen />;
-      case 'HOME': return <HomeScreen onNavigate={navigateTo} onRead={handleReadItem} onCreateNew={handleCreateNew} />;
-      case 'TRASH': return <TrashScreen onBack={() => navigateTo('HOME')} />;
-      case 'FAVORITE': return <FavoriteScreen onBack={() => navigateTo('HOME')} onRead={handleReadItem} />;
-      case 'TAGS': return <TagsScreen onBack={() => navigateTo('HOME')} onSelectTag={handleSelectTag} />;
-      case 'TAG_DETAILS': return <TagDetailScreen tag={selectedTag} onBack={() => navigateTo('TAGS')} onRead={handleReadItem} />;
-      case 'SETTINGS': return <SettingsScreen onBack={() => navigateTo('HOME')} />;
-      case 'READ': return selectedItem ? <ReadScreen item={selectedItem} onBack={() => navigateTo('HOME')} onEdit={handleEditItem} /> : <HomeScreen onNavigate={navigateTo} onRead={handleReadItem} onCreateNew={handleCreateNew} />;
-      case 'EDIT': return selectedItem ? <EditScreen item={selectedItem} isNew={isNewItem} onBack={() => isNewItem ? navigateTo('HOME') : setCurrentScreen('READ')} onSave={handleSaveEdit} /> : <HomeScreen onNavigate={navigateTo} onRead={handleReadItem} onCreateNew={handleCreateNew} />;
-      case 'NOTES': return <HomeScreen onNavigate={navigateTo} onRead={handleReadItem} onCreateNew={handleCreateNew} />;
-      default: return <HomeScreen onNavigate={navigateTo} onRead={handleReadItem} onCreateNew={handleCreateNew} />;
+      case 'HOME': return <HomeScreen onNavigate={navigateTo} onRead={handleReadItem} onCreateNew={handleCreateNew} activeTab={activeHomeTab} onTabChange={setActiveHomeTab} />;
+      case 'TRASH': return <TrashScreen onBack={goBack} />;
+      case 'FAVORITE': return <FavoriteScreen onBack={goBack} onRead={handleReadItem} />;
+      case 'TAGS': return <TagsScreen onBack={goBack} onSelectTag={handleSelectTag} />;
+      case 'TAG_DETAILS': return <TagDetailScreen tag={selectedTag} onBack={goBack} onRead={handleReadItem} />;
+      case 'SETTINGS': return <SettingsScreen onBack={goBack} />;
+      case 'READ': return selectedItem ? <ReadScreen item={selectedItem} onBack={goBack} onEdit={handleEditItem} /> : <HomeScreen onNavigate={navigateTo} onRead={handleReadItem} onCreateNew={handleCreateNew} activeTab={activeHomeTab} onTabChange={setActiveHomeTab} />;
+      case 'EDIT': return selectedItem ? <EditScreen item={selectedItem} isNew={isNewItem} onBack={goBack} onSave={handleSaveEdit} /> : <HomeScreen onNavigate={navigateTo} onRead={handleReadItem} onCreateNew={handleCreateNew} activeTab={activeHomeTab} onTabChange={setActiveHomeTab} />;
+      case 'NOTES': return <HomeScreen onNavigate={navigateTo} onRead={handleReadItem} onCreateNew={handleCreateNew} activeTab={activeHomeTab} onTabChange={setActiveHomeTab} />;
+      default: return <HomeScreen onNavigate={navigateTo} onRead={handleReadItem} onCreateNew={handleCreateNew} activeTab={activeHomeTab} onTabChange={setActiveHomeTab} />;
     }
   };
 
   return (
-    <div className={`min-h-screen flex justify-center items-center font-sans ${isDarkTheme ? 'bg-black' : 'bg-gray-200'}`}>
-      <div className={`w-full h-[100dvh] max-w-md relative shadow-2xl overflow-hidden flex flex-col ${isDarkTheme ? 'bg-black' : 'bg-white'}`}>
-        {renderScreen()}
-      </div>
+    <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-black' : 'bg-[#F2F2F7]'}`}>
+      {renderScreen()}
     </div>
   );
 };

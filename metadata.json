@@ -1,5 +1,7 @@
 {
   "name": "CLIPBOARD MAX",
   "description": "A high-fidelity prototype of an offline clipboard manager with a Midnight & Gold theme.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "clipboard-read"
+  ]
 }

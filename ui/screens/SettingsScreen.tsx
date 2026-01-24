@@ -164,7 +164,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   const containerClass = `min-h-screen flex flex-col font-sans animate-fade-in ${isDarkTheme ? 'bg-black text-white' : 'bg-[#F2F2F7] text-black'}`;
   const headerClass = `px-6 py-5 flex items-center justify-center sticky top-0 z-20 border-b relative ${isDarkTheme ? 'bg-black/95 border-zinc-800' : 'bg-white/95 border-gray-200'}`;
   const sectionTitleClass = `text-xs font-bold tracking-[0.15em] uppercase mb-3 mt-8 px-4 opacity-50`;
-  // Removed overflow-hidden to allow dropdowns to be visible
   const cardClass = `mx-4 rounded-2xl border ${isDarkTheme ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-sm'}`;
   const itemClass = `flex items-center justify-between p-4 transition-colors ${isDarkTheme ? 'hover:bg-zinc-800/50' : 'hover:bg-gray-50'}`;
   const dividerClass = `h-[1px] w-full ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-100'}`;
@@ -207,7 +206,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                  <div className={`flex p-1 rounded-lg ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-100'}`}>
                     {['Dark', 'Light', 'System'].map(t => {
                         const active = (t.toUpperCase() === 'DARK' && isDarkTheme) || (t.toUpperCase() === 'LIGHT' && !isDarkTheme); 
-                        // Note: 'System' logic simplified for UI demo
                         return (
                             <button 
                                 key={t}
@@ -266,7 +264,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
           {/* --- BACKUP & DATA --- */}
           <h3 className={sectionTitleClass}>Backup & Data</h3>
           <div className={cardClass}>
-               {/* Manual Action Buttons Row (Moved Top) */}
+               {/* Manual Action Buttons Row */}
                <div className="flex items-center p-2 rounded-t-2xl">
                    <button 
                        onClick={() => handleManualActionStart('BACKUP')}
