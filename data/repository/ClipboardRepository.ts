@@ -4,6 +4,11 @@ import { INITIAL_CLIPBOARD_DATA } from '../../util/Constants';
 // Simulating a Room Database DAO/Repository pattern
 class ClipboardRepository {
   private items: ClipboardItem[] = [...INITIAL_CLIPBOARD_DATA];
+  private knownTags: Set<string> = new Set();
+
+  constructor() {
+    this.items.forEach(item => item.tags.forEach(t => this.knownTags.add(t)));
+  }
 
   async getAllItems(
     sortOption: SortOption = 'CUSTOM', 
@@ -16,8 +21,6 @@ class ClipboardRepository {
         // Sorting Logic
         result.sort((a, b) => {
           // 1. Always prioritize Pinned items to the top
-          // This check happens BEFORE sort direction is applied to ensure they never flip to the bottom
-          // regardless of ASC or DESC. Pinned is a "State", not just a value.
           if (a.isPinned !== b.isPinned) {
               return a.isPinned ? -1 : 1;
           }
@@ -27,15 +30,6 @@ class ClipboardRepository {
           
           switch (sortOption) {
             case 'CUSTOM':
-              // For CUSTOM (Manual/Insertion Order), Index 0 represents the "Top" or "Newest".
-              // We want DESC (Default) to show Top (Index 0) first.
-              // Standard sort: if return < 0, a comes first.
-              // Final logic is: sortDirection === 'ASC' ? comparison : -comparison;
-              
-              // If we use: indexOf(b) - indexOf(a)
-              // Example: a=Index0, b=Index1. 1 - 0 = 1.
-              // If ASC: returns 1. b before a. Order: 1, 0 (Bottom/Oldest first).
-              // If DESC: returns -1. a before b. Order: 0, 1 (Top/Newest first).
               comparison = this.items.indexOf(b) - this.items.indexOf(a);
               break;
             
@@ -45,7 +39,6 @@ class ClipboardRepository {
                if (!isNaN(dateA) && !isNaN(dateB)) {
                    comparison = dateA - dateB;
                } else {
-                   // Fallback for mock data strings or ID based sorting
                    comparison = a.id.localeCompare(b.id);
                }
                break;
@@ -88,20 +81,29 @@ class ClipboardRepository {
 
   async getUniqueTags(): Promise<string[]> {
     return new Promise((resolve) => {
-      const tags = new Set<string>();
-      this.items.filter(i => !i.isDeleted).forEach(item => item.tags.forEach(t => tags.add(t)));
-      resolve(Array.from(tags).sort());
+      // Return persistent tags + any tags currently on items (union), including deleted items
+      const allTags = new Set(this.knownTags);
+      this.items.forEach(item => item.tags.forEach(t => allTags.add(t)));
+      resolve(Array.from(allTags).sort());
     });
+  }
+
+  async addNewTag(tag: string): Promise<void> {
+    this.knownTags.add(tag);
   }
 
   async addItem(item: ClipboardItem): Promise<void> {
     this.items = [item, ...this.items];
+    item.tags.forEach(t => this.knownTags.add(t));
   }
 
   async updateItem(id: string, updates: Partial<ClipboardItem>): Promise<void> {
     this.items = this.items.map(i => 
       i.id === id ? { ...i, ...updates } : i
     );
+    if (updates.tags) {
+        updates.tags.forEach(t => this.knownTags.add(t));
+    }
   }
 
   async deleteItem(id: string): Promise<void> {
@@ -200,11 +202,13 @@ class ClipboardRepository {
       isFavorite: false,
       isDeleted: false
     };
-
+    
+    this.knownTags.add('#merged');
     this.items = [newItem, ...this.items];
   }
 
   async addTagsToItems(ids: string[], newTags: string[]): Promise<void> {
+    newTags.forEach(t => this.knownTags.add(t));
     this.items = this.items.map(i => {
       if (ids.includes(i.id)) {
         const updatedTags = Array.from(new Set([...i.tags, ...newTags]));
@@ -215,6 +219,7 @@ class ClipboardRepository {
   }
 
   async replaceTagsForItems(ids: string[], newTags: string[]): Promise<void> {
+    newTags.forEach(t => this.knownTags.add(t));
     this.items = this.items.map(i => {
       if (ids.includes(i.id)) {
         return { ...i, tags: newTags };
@@ -224,6 +229,9 @@ class ClipboardRepository {
   }
 
   async removeTags(tagsToRemove: string[]): Promise<void> {
+      // Explicit removal from persistent tags and items
+      tagsToRemove.forEach(t => this.knownTags.delete(t));
+      
       this.items = this.items.map(item => ({
         ...item,
         tags: item.tags.filter(t => !tagsToRemove.includes(t))
@@ -231,6 +239,11 @@ class ClipboardRepository {
   }
 
   async mergeTags(tagsToMerge: string[], newTagName: string): Promise<void> {
+      // Add new tag to known
+      this.knownTags.add(newTagName);
+      // Remove old tags from known
+      tagsToMerge.forEach(t => this.knownTags.delete(t));
+
       this.items = this.items.map(item => {
           const hasTagToMerge = item.tags.some(t => tagsToMerge.includes(t));
           if (hasTagToMerge) {
@@ -240,6 +253,53 @@ class ClipboardRepository {
           }
           return item;
       });
+  }
+
+  // --- Export / Import Logic ---
+  
+  async exportData(): Promise<string> {
+    const data = {
+        version: 1,
+        timestamp: new Date().toISOString(),
+        items: this.items,
+        tags: Array.from(this.knownTags)
+    };
+    return JSON.stringify(data, null, 2);
+  }
+
+  async importData(jsonData: string): Promise<boolean> {
+      try {
+          const data = JSON.parse(jsonData);
+          // Basic validation
+          if (!data.items || !Array.isArray(data.items)) return false;
+
+          // Merge Tags
+          if (data.tags && Array.isArray(data.tags)) {
+              data.tags.forEach((t: string) => this.knownTags.add(t));
+          }
+
+          // Merge Items (Upsert based on ID)
+          const existingIds = new Set(this.items.map(i => i.id));
+          
+          data.items.forEach((item: ClipboardItem) => {
+              if (existingIds.has(item.id)) {
+                  // Update existing item
+                  this.items = this.items.map(i => i.id === item.id ? item : i);
+              } else {
+                  // Add new item (Add to top)
+                  this.items.unshift(item);
+              }
+              // Ensure tags from item are registered
+              if (item.tags) {
+                  item.tags.forEach((t: string) => this.knownTags.add(t));
+              }
+          });
+          
+          return true;
+      } catch (e) {
+          console.error("Import failed", e);
+          return false;
+      }
   }
 }
 

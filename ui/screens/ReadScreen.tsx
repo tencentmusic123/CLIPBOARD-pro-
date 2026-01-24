@@ -39,6 +39,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
   const smartItems = useMemo<SmartItem[]>(() => {
     if (!isSmartRecognitionOn) return [];
     
+    // We use plain content for smart recognition even if it's rich text
     const text = currentItem.content;
     const items: SmartItem[] = [];
 
@@ -106,6 +107,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
       setIsHashtagOverlayOpen(false);
   };
 
+  // Helper for search highlighting on plain text
   const highlightText = (text: string, query: string) => {
       if (!query) return text;
       const parts = text.split(new RegExp(`(${query})`, 'gi'));
@@ -119,6 +121,9 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
   const textColor = isDarkTheme ? 'text-zinc-100' : 'text-gray-900';
   const bgColor = isDarkTheme ? 'bg-black' : 'bg-white';
   const iconColor = isDarkTheme ? 'text-zinc-300 hover:text-white' : 'text-gray-600 hover:text-black';
+
+  // Determine what to display
+  const shouldRenderHtml = !isSearchActive && !!currentItem.htmlContent;
 
   return (
     <div className={`h-screen w-full flex flex-col relative font-sans animate-fade-in ${bgColor} ${isDarkTheme ? 'text-white' : 'text-black'}`}>
@@ -204,12 +209,18 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
             ))}
          </div>
 
-         {/* Text with Dynamic Font Size */}
+         {/* Text Display */}
          <div 
             className={`leading-relaxed whitespace-pre-wrap font-sans tracking-wide ${textColor}`} 
             style={{ fontSize: `${readingFontSize}px`, wordSpacing: '2px' }}
          >
-             {highlightText(currentItem.displayContent || currentItem.content, searchQuery)}
+             {shouldRenderHtml ? (
+                 // Render HTML content if available and not searching
+                 <div dangerouslySetInnerHTML={{ __html: currentItem.htmlContent || '' }} />
+             ) : (
+                 // Render Plain text (with search highlighting if active)
+                 highlightText(currentItem.displayContent || currentItem.content, searchQuery)
+             )}
          </div>
          <div className="h-32"></div>
       </main>

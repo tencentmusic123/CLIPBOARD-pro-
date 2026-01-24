@@ -3,6 +3,7 @@ import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { ClipboardItem, ClipboardType } from '../../types';
 import GoldCard from '../components/GoldCard';
 import JSZip from 'jszip';
+import { useSettings } from '../context/SettingsContext';
 
 interface FavoriteScreenProps {
   onBack: () => void;
@@ -10,14 +11,18 @@ interface FavoriteScreenProps {
 }
 
 type FilterType = 'ALL' | ClipboardType;
+type CategoryType = 'ALL' | 'clipboard' | 'notes';
 
 interface FilterState {
   type: FilterType;
   tag: string;
+  category: CategoryType;
 }
 
 const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
+  const { accentColor, isDarkTheme } = useSettings();
   const [items, setItems] = useState<ClipboardItem[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>(['All']);
   const [loading, setLoading] = useState(true);
   
   // Selection Mode State
@@ -36,15 +41,9 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filter, setFilter] = useState<FilterState>({
     type: 'ALL',
-    tag: 'All'
+    tag: 'All',
+    category: 'ALL'
   });
-
-  // Unique Tags logic
-  const availableTags = useMemo(() => {
-    const tags = new Set<string>();
-    items.forEach(item => item.tags.forEach(t => tags.add(t)));
-    return ['All', ...Array.from(tags)];
-  }, [items]);
 
   useEffect(() => {
     fetchFavorites();
@@ -54,12 +53,17 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
     setLoading(true);
     const data = await clipboardRepository.getFavoriteItems();
     setItems(data);
+    
+    const tags = await clipboardRepository.getUniqueTags();
+    setAvailableTags(['All', ...tags]);
+    
     setLoading(false);
   };
 
   // --- Filtering Logic ---
   const filteredItems = useMemo(() => {
     return items.filter(item => {
+      if (filter.category !== 'ALL' && item.category !== filter.category) return false;
       if (filter.type !== 'ALL' && item.type !== filter.type) return false;
       if (filter.tag !== 'All' && !item.tags.includes(filter.tag)) return false;
       return true;
@@ -210,14 +214,16 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
   };
 
   // --- Render ---
+  const textColor = isDarkTheme ? 'text-white' : 'text-black';
+  const bgColor = isDarkTheme ? 'bg-black' : 'bg-white';
 
   return (
-    <div className="min-h-screen bg-black text-white relative flex flex-col max-w-md mx-auto border-x border-zinc-900 shadow-2xl h-full animate-fade-in font-sans" onClick={() => setShowMoreOptions(false)}>
+    <div className={`h-full w-full flex flex-col relative animate-fade-in font-sans ${bgColor} ${textColor}`} onClick={() => setShowMoreOptions(false)}>
       
       {/* --- HEADER --- */}
-      <header className="px-4 py-4 flex items-center justify-between bg-black/95 backdrop-blur-md sticky top-0 z-20 border-b border-zinc-800 h-16">
+      <header className={`px-4 py-4 flex items-center justify-between sticky top-0 z-20 border-b h-16 flex-shrink-0 ${isDarkTheme ? 'bg-black/95 border-zinc-800' : 'bg-white/95 border-gray-200'}`}>
         <div className="flex items-center">
-            <button onClick={() => isSelectionMode ? setIsSelectionMode(false) : onBack()} className="text-white hover:text-gold transition-colors mr-3">
+            <button onClick={() => isSelectionMode ? setIsSelectionMode(false) : onBack()} className={`hover:opacity-80 transition-opacity mr-3 ${textColor}`} style={{ color: isSelectionMode ? undefined : accentColor }}>
                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                  </svg>
@@ -229,7 +235,7 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                     </svg>
                 )}
-                <h2 className={`text-2xl tracking-wider font-normal ${isSelectionMode ? 'text-white' : 'text-gold'}`}>
+                <h2 className={`text-2xl tracking-wider font-normal`} style={{ color: isSelectionMode ? textColor : accentColor }}>
                     {isSelectionMode ? `${selectedIds.size} Selected` : 'Favorite'}
                 </h2>
             </div>
@@ -238,9 +244,9 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
         {isSelectionMode ? (
              <div className="flex items-center space-x-3">
                  {/* Double Right Mark (Select All) */}
-                 <button onClick={handleSelectAll} className="text-white hover:text-gold transition-colors">
+                 <button onClick={handleSelectAll} style={{ color: accentColor }} className="hover:opacity-80 transition-colors">
                     {selectedIds.size === filteredItems.length && filteredItems.length > 0 ? (
-                        <svg className="w-7 h-7 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 7l4 4L15 5" opacity="0.5" />
                         </svg>
@@ -258,18 +264,18 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
                  </button>
 
                  {/* Heart (Remove Fav) */}
-                 <button onClick={handleRemoveFavorites} className="text-white hover:text-gold transition-colors">
+                 <button onClick={handleRemoveFavorites} style={{ color: accentColor }} className="hover:opacity-80 transition-colors">
                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                  </button>
 
                  {/* 3 Dots (More) */}
-                 <button onClick={(e) => { e.stopPropagation(); setShowMoreOptions(true); }} className="text-white hover:text-gold transition-colors">
+                 <button onClick={(e) => { e.stopPropagation(); setShowMoreOptions(true); }} style={{ color: accentColor }} className="hover:opacity-80 transition-colors">
                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                  </button>
              </div>
         ) : (
             <button 
-                onClick={() => setIsFilterOpen(!isFilterOpen)} 
+                onClick={(e) => { e.stopPropagation(); setIsFilterOpen(!isFilterOpen); }} 
                 className="hover:opacity-80 transition-opacity"
             >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -280,30 +286,59 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
       </header>
 
       {/* Decorative Line */}
-      <div className="h-[2px] w-full bg-gold/50 shadow-[0_0_10px_rgba(212,175,55,0.5)] z-10"></div>
+      <div className="h-[2px] w-full shadow-[0_0_10px_rgba(212,175,55,0.5)] z-10" style={{ backgroundColor: `${accentColor}80` }}></div>
 
       {/* --- FILTER DROPDOWN OVERLAY --- */}
       {isFilterOpen && !isSelectionMode && (
-        <div className="absolute top-16 right-0 left-0 z-30 px-4 py-2 animate-fade-in-down">
-             <div className="bg-black border-2 border-gold rounded-3xl p-5 shadow-2xl relative">
-                <div className="absolute -top-3 right-5 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[10px] border-b-gold"></div>
+        <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-0 left-0 z-30 px-4 py-2 animate-fade-in-down">
+             <div className={`border-2 rounded-3xl p-5 shadow-2xl relative ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+                <div className="absolute -top-3 right-5 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[10px]" style={{ borderBottomColor: accentColor }}></div>
                 <div className="flex items-center justify-center mb-6">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
                         <path fillRule="evenodd" clipRule="evenodd" d="M3 4C3 3.44772 3.44772 3 4 3H20C20.5523 3 21 3.44772 21 4V6.58579C21 6.851 20.8946 7.10536 20.7071 7.29289L14.2929 13.7071C14.1054 13.8946 14 14.149 14 14.4142V17L10 21V14.4142C10 14.149 9.89464 13.8946 9.70711 13.7071L3.29289 7.29289C3.10536 7.10536 3 6.851 3 6.58579V4Z" fill="#EAC336"/>
                     </svg>
-                    <span className="text-white text-xl tracking-wider">filter</span>
+                    <span className={`text-xl tracking-wider ${textColor}`}>filter</span>
                 </div>
-                {/* Source buttons removed as filter handles category separately */}
-                <div className="grid grid-cols-3 gap-y-4 gap-x-2 mb-6">
-                    <FilterItem label="All" active={filter.type === 'ALL'} onClick={() => setFilter(f => ({...f, type: 'ALL'}))} underline />
-                    <FilterItem label="Phone" active={filter.type === ClipboardType.PHONE} onClick={() => setFilter(f => ({...f, type: ClipboardType.PHONE}))} />
-                    <FilterItem label="Link" active={filter.type === ClipboardType.LINK} onClick={() => setFilter(f => ({...f, type: ClipboardType.LINK}))} />
-                    <FilterItem label="Location" active={filter.type === ClipboardType.LOCATION} onClick={() => setFilter(f => ({...f, type: ClipboardType.LOCATION}))} />
-                    <FilterItem label="Secure" active={filter.type === ClipboardType.SECURE} onClick={() => setFilter(f => ({...f, type: ClipboardType.SECURE}))} />
+                
+                {/* Category Switching - NEW */}
+                <div className="flex justify-center space-x-6 mb-6 border-b pb-4" style={{ borderColor: isDarkTheme ? '#333' : '#eee' }}>
+                    <FilterItem 
+                        label="All" 
+                        active={filter.category === 'ALL'} 
+                        onClick={() => setFilter(f => ({...f, category: 'ALL'}))} 
+                        accentColor={accentColor} 
+                        textColor={textColor}
+                        underline
+                    />
+                    <FilterItem 
+                        label="Clipboard" 
+                        active={filter.category === 'clipboard'} 
+                        onClick={() => setFilter(f => ({...f, category: 'clipboard'}))} 
+                        accentColor={accentColor} 
+                        textColor={textColor}
+                        underline
+                    />
+                     <FilterItem 
+                        label="Notes" 
+                        active={filter.category === 'notes'} 
+                        onClick={() => setFilter(f => ({...f, category: 'notes'}))} 
+                        accentColor={accentColor} 
+                        textColor={textColor}
+                        underline
+                    />
+                </div>
+
+                {/* Types Grid */}
+                <div className="grid grid-cols-3 gap-y-4 gap-x-2 mb-6 border-b pb-4" style={{ borderColor: isDarkTheme ? '#333' : '#eee' }}>
+                    <FilterItem label="All" active={filter.type === 'ALL'} onClick={() => setFilter(f => ({...f, type: 'ALL'}))} underline accentColor={accentColor} textColor={textColor} />
+                    <FilterItem label="Phone" active={filter.type === ClipboardType.PHONE} onClick={() => setFilter(f => ({...f, type: ClipboardType.PHONE}))} accentColor={accentColor} textColor={textColor} />
+                    <FilterItem label="Link" active={filter.type === ClipboardType.LINK} onClick={() => setFilter(f => ({...f, type: ClipboardType.LINK}))} accentColor={accentColor} textColor={textColor} />
+                    <FilterItem label="Location" active={filter.type === ClipboardType.LOCATION} onClick={() => setFilter(f => ({...f, type: ClipboardType.LOCATION}))} accentColor={accentColor} textColor={textColor} />
+                    <FilterItem label="Secure" active={filter.type === ClipboardType.SECURE} onClick={() => setFilter(f => ({...f, type: ClipboardType.SECURE}))} accentColor={accentColor} textColor={textColor} />
                 </div>
                 <div className="grid grid-cols-3 gap-y-4 gap-x-2">
                     {availableTags.map(tag => (
-                        <FilterItem key={tag} label={tag} active={filter.tag === tag} onClick={() => setFilter(f => ({...f, tag: tag}))} underline={tag === 'All'} />
+                        <FilterItem key={tag} label={tag} active={filter.tag === tag} onClick={() => setFilter(f => ({...f, tag: tag}))} underline={tag === 'All'} accentColor={accentColor} textColor={textColor} />
                     ))}
                 </div>
              </div>
@@ -313,13 +348,13 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
       {/* --- MORE OPTIONS MENU OVERLAY --- */}
       {showMoreOptions && (
           <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-4 z-40 animate-fade-in-down w-56">
-              <div className="bg-zinc-900 border border-gold rounded-xl overflow-hidden shadow-2xl flex flex-col">
-                  <MenuItem label="Merge" onClick={handleMerge} />
-                  <MenuItem label="Share" onClick={handleShare} />
-                  <MenuItem label="Export" onClick={handleExport} />
-                  <MenuItem label="Copy to Notes" onClick={handleCopyToNotes} />
-                  <MenuItem label="Print" onClick={handlePrint} />
-                  <MenuItem label="Add #Tag" onClick={handleAddHashtagStart} />
+              <div className={`border rounded-xl overflow-hidden shadow-2xl flex flex-col ${isDarkTheme ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+                  <MenuItem label="Merge" onClick={handleMerge} textColor={textColor} />
+                  <MenuItem label="Share" onClick={handleShare} textColor={textColor} />
+                  <MenuItem label="Export" onClick={handleExport} textColor={textColor} />
+                  <MenuItem label="Copy to Notes" onClick={handleCopyToNotes} textColor={textColor} />
+                  <MenuItem label="Print" onClick={handlePrint} textColor={textColor} />
+                  <MenuItem label="Add #Tag" onClick={handleAddHashtagStart} textColor={textColor} />
               </div>
           </div>
       )}
@@ -327,7 +362,7 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
       {/* --- MAIN CONTENT --- */}
       <main className="flex-1 px-4 py-6 overflow-y-auto no-scrollbar relative z-0">
           {loading ? (
-             <div className="text-gold text-center mt-20 font-mono">Loading Favorites...</div>
+             <div className="text-center mt-20 font-mono" style={{ color: accentColor }}>Loading Favorites...</div>
           ) : filteredItems.length === 0 ? (
              <div className="text-gray-500 text-center mt-20 font-light italic">No favorites yet</div>
           ) : (
@@ -412,15 +447,15 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
 };
 
 // --- Helper Component ---
-const FilterItem: React.FC<{ label: string; icon?: React.ReactNode; active: boolean; onClick: () => void; underline?: boolean }> = ({ label, icon, active, onClick, underline }) => (
-    <button onClick={onClick} className={`flex items-center justify-center space-x-1 py-1 transition-colors ${active ? 'text-white font-medium' : 'text-gray-400 hover:text-white'}`}>
+const FilterItem: React.FC<{ label: string; icon?: React.ReactNode; active: boolean; onClick: () => void; underline?: boolean; accentColor: string; textColor: string }> = ({ label, icon, active, onClick, underline, accentColor, textColor }) => (
+    <button onClick={onClick} className={`flex items-center justify-center space-x-1 py-1 transition-colors ${active ? 'font-medium' : 'text-gray-400'}`} style={{ color: active ? textColor : undefined }}>
         {icon} <span className="capitalize">{label}</span>
-        {underline && active && <div className="absolute bottom-0 w-8 h-[2px] bg-gold translate-y-2"></div>}
+        {underline && active && <div className="absolute bottom-0 w-8 h-[2px] translate-y-2" style={{ backgroundColor: accentColor }}></div>}
     </button>
 );
 
-const MenuItem: React.FC<{ label: string; onClick: () => void; textColor?: string }> = ({ label, onClick, textColor = 'text-white' }) => (
-    <button onClick={onClick} className={`text-left w-full px-4 py-3 hover:bg-zinc-800 ${textColor} text-sm font-medium border-b border-zinc-800 last:border-0`}>
+const MenuItem: React.FC<{ label: string; onClick: () => void; textColor?: string }> = ({ label, onClick, textColor }) => (
+    <button onClick={onClick} className={`text-left w-full px-4 py-3 hover:bg-opacity-20 hover:bg-gray-500 ${textColor} text-sm font-medium border-b border-gray-700 last:border-0`}>
         {label}
     </button>
 );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ScreenName } from '../../types';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
 
 interface SideBarProps {
   isOpen: boolean;
@@ -9,16 +10,21 @@ interface SideBarProps {
 }
 
 const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose, onNavigate }) => {
-  const [user, setUser] = useState<{ email: string; name: string } | null>(null);
   const { accentColor } = useSettings();
-
-  const handleLogin = () => {
-    setUser({ name: 'User Name', email: 'user.email@gmail.com' });
-  };
+  const { user, loginWithGoogle, logout, isLoading } = useAuth();
 
   const handleMenuClick = (screen: ScreenName) => {
     onNavigate(screen);
     onClose();
+  };
+
+  const handleLoginClick = async () => {
+      await loginWithGoogle();
+  };
+
+  const handleLogoutClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      logout();
   };
 
   return (
@@ -56,8 +62,16 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose, onNavigate }) => {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-zinc-900 bg-black">
-            {!user ? (
-                <button onClick={handleLogin} className="flex items-center space-x-4 w-full group py-2">
+            {isLoading ? (
+                <div className="flex items-center space-x-4 w-full py-2 animate-pulse">
+                     <div className="w-10 h-10 rounded-full bg-zinc-800"></div>
+                     <div className="flex flex-col space-y-2 flex-1">
+                         <div className="h-3 bg-zinc-800 rounded w-3/4"></div>
+                         <div className="h-2 bg-zinc-800 rounded w-1/2"></div>
+                     </div>
+                </div>
+            ) : !user ? (
+                <button onClick={handleLoginClick} className="flex items-center space-x-4 w-full group py-2">
                     <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors border border-zinc-700">
                         <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3 0 1.66-1.34 3-3 3S9 9.66 9 8c0-1.66 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
@@ -71,14 +85,21 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose, onNavigate }) => {
                     </div>
                 </button>
             ) : (
-                 <div className="flex items-center space-x-3 w-full py-2">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-black font-bold text-lg" style={{ backgroundColor: accentColor }}>
-                        {user.name.charAt(0)}
+                 <div className="flex items-center justify-between w-full py-2 group relative">
+                    <div className="flex items-center space-x-3 overflow-hidden">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-black font-bold text-lg shrink-0" style={{ backgroundColor: accentColor }}>
+                            {user.name.charAt(0)}
+                        </div>
+                        <div className="flex flex-col overflow-hidden">
+                            <span className="text-white text-sm font-medium truncate">{user.name}</span>
+                            <span className="text-zinc-500 text-xs truncate">{user.email}</span>
+                        </div>
                     </div>
-                    <div className="flex flex-col overflow-hidden">
-                        <span className="text-white text-sm font-medium truncate">{user.name}</span>
-                        <span className="text-zinc-500 text-xs truncate">{user.email}</span>
-                    </div>
+                    <button onClick={handleLogoutClick} className="p-2 text-zinc-600 hover:text-red-500 transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                             <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </button>
                 </div>
             )}
         </div>

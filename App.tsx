@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SettingsProvider, useSettings } from './ui/context/SettingsContext';
+import { AuthProvider } from './ui/context/AuthContext';
 import SplashScreen from './ui/screens/SplashScreen';
 import HomeScreen from './ui/screens/HomeScreen';
 import TrashScreen from './ui/screens/TrashScreen';
@@ -102,7 +103,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <SettingsProvider>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </SettingsProvider>
   );
 };

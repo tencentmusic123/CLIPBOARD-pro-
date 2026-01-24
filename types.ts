@@ -9,7 +9,8 @@ export enum ClipboardType {
 export interface ClipboardItem {
   id: string;
   title?: string; // New optional title
-  content: string;
+  content: string; // Plain text content for searching and preview
+  htmlContent?: string; // Rich text content for display
   displayContent?: string; // For masked content
   type: ClipboardType;
   category: 'clipboard' | 'notes'; // Strict separation

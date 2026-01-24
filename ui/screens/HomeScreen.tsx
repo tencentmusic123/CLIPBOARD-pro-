@@ -25,6 +25,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
   // --- STATE: Data & Navigation ---
   const [items, setItems] = useState<ClipboardItem[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>(['All']);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'clipboard' | 'notes'>('clipboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -51,7 +52,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
   // --- STATE: Hashtag Overlay ---
   const [showHashtagOverlay, setShowHashtagOverlay] = useState(false);
-  const [allSystemTags, setAllSystemTags] = useState<string[]>([]);
   const [overlaySelectedTags, setOverlaySelectedTags] = useState<Set<string>>(new Set());
   const [newTagInput, setNewTagInput] = useState('');
 
@@ -62,6 +62,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
   const fetchData = async () => {
     const data = await clipboardRepository.getAllItems(sortOption, sortDirection);
     setItems(data);
+    
+    const tags = await clipboardRepository.getUniqueTags();
+    setAvailableTags(['All', ...tags]);
+    
     setLoading(false);
   };
 
@@ -76,12 +80,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
   };
 
   // --- COMPUTED VALUES ---
-  const availableTags = useMemo(() => {
-    const tags = new Set<string>();
-    items.forEach(item => item.tags.forEach(t => tags.add(t)));
-    return ['All', ...Array.from(tags)];
-  }, [items]);
-
   const displayItems = useMemo(() => {
     return items.filter(item => {
       // 0. Tab Logic (Folder separation)
@@ -166,6 +164,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
           showToast("Removed from Favorites");
       }
       fetchData();
+  };
+
+  const handleBulkCopy = async () => {
+      const selectedItems = items.filter(i => selectedIds.has(i.id));
+      if (selectedItems.length === 0) return;
+
+      const textToCopy = selectedItems.map(i => i.content).join('\n\n');
+      
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        showToast("Copied to system clipboard");
+      } catch (err) {
+        console.error("Copy failed", err);
+        showToast("Failed to copy");
+      }
+      
+      setShowMoreMenu(false);
+      exitSelectionMode();
   };
 
   const handleMerge = async () => {
@@ -283,7 +299,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       setShowMoreMenu(false);
       // 1. Fetch all available unique tags from the system
       const allTags = await clipboardRepository.getUniqueTags();
-      setAllSystemTags(allTags);
+      setAvailableTags(['All', ...allTags]); // Ensure availableTags is synced for consistency
 
       // 2. Determine initial selection (Union of tags from selected items)
       const selectedItems = items.filter(i => selectedIds.has(i.id));
@@ -316,8 +332,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       setOverlaySelectedTags(newSet);
       
       // Also add to system list view temporarily
-      if (!allSystemTags.includes(tag)) {
-          setAllSystemTags([...allSystemTags, tag]);
+      if (!availableTags.includes(tag)) {
+          setAvailableTags(prev => [...prev, tag]);
+          clipboardRepository.addNewTag(tag); // Persist immediately
       }
       setNewTagInput('');
   };
@@ -528,6 +545,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       {showMoreMenu && isSelectionMode && (
           <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-2 z-50 animate-fade-in-down">
               <div className="bg-black border-2 rounded-xl py-2 w-48 shadow-2xl shadow-black/50" style={{ borderColor: accentColor }}>
+                  <MenuItem label="Copy" onClick={handleBulkCopy} />
                   <MenuItem label="Merge" onClick={handleMerge} />
                   <MenuItem label="Share" onClick={handleShare} />
                   <MenuItem label="Export" onClick={handleExport} />
@@ -645,7 +663,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
                   {/* Tag List */}
                   <div className="flex flex-col gap-2 overflow-y-auto pr-1 flex-1 min-h-[150px]">
-                      {allSystemTags.map(tag => {
+                      {availableTags.filter(t => t !== 'All').map(tag => {
                           const isSelected = overlaySelectedTags.has(tag);
                           return (
                               <button 
@@ -662,7 +680,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
                               </button>
                           );
                       })}
-                      {allSystemTags.length === 0 && (
+                      {availableTags.length <= 1 && (
                           <div className="text-zinc-600 text-sm italic py-4 text-center">No tags found. Add one above.</div>
                       )}
                   </div>

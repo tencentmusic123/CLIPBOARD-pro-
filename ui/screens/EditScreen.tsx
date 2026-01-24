@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ClipboardItem } from '../../types';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { useSettings } from '../context/SettingsContext';
@@ -11,42 +11,200 @@ interface EditScreenProps {
 }
 
 const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) => {
-  const { accentColor, isDarkTheme, isAiSupportOn } = useSettings();
+  const { accentColor, isDarkTheme, isAiSupportOn, readingFontSize } = useSettings();
   
   // --- Local State ---
   const [title, setTitle] = useState(item.title || '');
-  const [fontSize, setFontSize] = useState(16);
+  const [fontSize, setFontSize] = useState(readingFontSize);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isAiMenuOpen, setIsAiMenuOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   
+  // Editor State for UI toggles
+  const [isBoldActive, setIsBoldActive] = useState(false);
+  const [isItalicActive, setIsItalicActive] = useState(false);
+  const [isUnderlineActive, setIsUnderlineActive] = useState(false);
+  const [isStrikeActive, setIsStrikeActive] = useState(false);
+  
   // --- Refs ---
   const editorRef = useRef<HTMLDivElement>(null);
   const caseModeRef = useRef<number>(0);
+  
+  // --- CUSTOM HISTORY ENGINE ---
+  // We use Refs for history to prevent re-renders while typing which causes cursor jumping
+  const historyStack = useRef<string[]>([]);
+  const historyIndex = useRef<number>(-1);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // --- Effects ---
+  // --- Initialization ---
   useEffect(() => {
     if (editorRef.current) {
-        editorRef.current.innerText = item.content;
-    }
-  }, [item.content]);
+        // Initialize content
+        const initialContent = item.htmlContent || item.content || '';
+        if (item.htmlContent) {
+            editorRef.current.innerHTML = item.htmlContent;
+        } else {
+            editorRef.current.innerText = item.content;
+        }
 
-  // --- Helpers ---
-  const updateContent = (newText: string) => {
-      if (editorRef.current) editorRef.current.innerText = newText;
+        // Initialize History
+        historyStack.current = [editorRef.current.innerHTML];
+        historyIndex.current = 0;
+    }
+  }, [item]);
+
+  // --- History Logic ---
+
+  /**
+   * Pushes the current state of the editor to the history stack.
+   * Should be called AFTER a significant change (AI action, button press).
+   */
+  const saveSnapshot = useCallback(() => {
+      if (!editorRef.current) return;
+      
+      const currentContent = editorRef.current.innerHTML;
+      const currentIndex = historyIndex.current;
+      const currentStack = historyStack.current;
+
+      // Don't save if it's identical to the current state
+      if (currentStack[currentIndex] === currentContent) return;
+
+      // If we are in the middle of the stack (did undo), chop off the future
+      const newStack = currentStack.slice(0, currentIndex + 1);
+      
+      newStack.push(currentContent);
+      historyStack.current = newStack;
+      historyIndex.current = newStack.length - 1;
+  }, []);
+
+  /**
+   * Handles typing input. Debounces the snapshot save so we don't 
+   * save every single character, but save when the user pauses.
+   */
+  const handleInput = () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      
+      debounceTimer.current = setTimeout(() => {
+          saveSnapshot();
+      }, 500); // Save 500ms after last keystroke
+  };
+
+  const performUndo = () => {
+      if (!editorRef.current) return;
+      if (historyIndex.current > 0) {
+          historyIndex.current--;
+          const prevContent = historyStack.current[historyIndex.current];
+          editorRef.current.innerHTML = prevContent;
+          placeCaretAtEnd(editorRef.current); // Move cursor to end to prevent getting stuck
+      }
+  };
+
+  const performRedo = () => {
+      if (!editorRef.current) return;
+      if (historyIndex.current < historyStack.current.length - 1) {
+          historyIndex.current++;
+          const nextContent = historyStack.current[historyIndex.current];
+          editorRef.current.innerHTML = nextContent;
+          placeCaretAtEnd(editorRef.current);
+      }
+  };
+
+  const placeCaretAtEnd = (el: HTMLElement) => {
+      el.focus();
+      if (typeof window.getSelection !== "undefined" && typeof document.createRange !== "undefined") {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          const sel = window.getSelection();
+          if (sel) {
+              sel.removeAllRanges();
+              sel.addRange(range);
+          }
+      }
+  };
+
+  // --- Editor Helpers ---
+
+  /**
+   * Updates content programmatically (for AI/Case tools).
+   * Automatically saves history before and after to ensure Undo works.
+   */
+  const updateContentProgrammatically = (newText: string) => {
+      if (!editorRef.current) return;
+      
+      // 1. Force save current state before changing (if distinct)
+      saveSnapshot();
+
+      // 2. Apply change
+      // Note: Replacing innerText removes bold/italic tags. 
+      // This is expected for "Text Transformers" like Case Converter.
+      // But because we saved history above, Undo will restore the tags!
+      editorRef.current.innerText = newText;
+
+      // 3. Save new state
+      saveSnapshot();
+  };
+
+  const checkActiveStyles = () => {
+      if (!document) return;
+      setIsBoldActive(document.queryCommandState('bold'));
+      setIsItalicActive(document.queryCommandState('italic'));
+      setIsUnderlineActive(document.queryCommandState('underline'));
+      setIsStrikeActive(document.queryCommandState('strikeThrough'));
+  };
+
+  const handleEditorInteraction = () => {
+      checkActiveStyles();
+      // Close menus on interaction
+      if (isAiMenuOpen) setIsAiMenuOpen(false);
+  };
+
+  // Helper to prevent focus loss when clicking toolbar buttons
+  const handleToolbarMouseDown = (e: React.MouseEvent) => {
+      e.preventDefault();
   };
 
   const execCmd = (command: string, value: string | undefined = undefined) => {
+      // 1. Execute Native Command
       document.execCommand(command, false, value);
+      
+      // 2. Force Snapshot immediately so this formatting change is undoable
+      if (editorRef.current) {
+          // Clear any pending typing debounce to keep timeline clean
+          if (debounceTimer.current) clearTimeout(debounceTimer.current);
+          
+          const newStack = historyStack.current.slice(0, historyIndex.current + 1);
+          newStack.push(editorRef.current.innerHTML);
+          historyStack.current = newStack;
+          historyIndex.current = newStack.length - 1;
+      }
+      
       if (editorRef.current) editorRef.current.focus();
+      checkActiveStyles();
+  };
+
+  const handleChangeCase = () => {
+      if (!editorRef.current) return;
+      const text = editorRef.current.innerText;
+      let newText = text;
+      
+      const mode = (caseModeRef.current + 1) % 4;
+      caseModeRef.current = mode;
+      
+      switch (mode) {
+          case 0: newText = text.toUpperCase(); break; // UPPERCASE
+          case 1: newText = text.toLowerCase(); break; // lowercase
+          case 2: newText = text.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); break; // Title Case
+          case 3: newText = text.toLowerCase().replace(/(^\s*\w|[\.\!\?]\s*\w)/g, c => c.toUpperCase()); break; // Sentence case
+      }
+      
+      updateContentProgrammatically(newText);
   };
 
   // --- Input Handlers ---
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.value.length <= 30) setTitle(e.target.value);
   };
-
-  const handleFontSize = (delta: number) => setFontSize(Math.max(12, Math.min(32, fontSize + delta)));
 
   // --- AI / Text Processing Handlers ---
   const handleAiAction = (action: string) => {
@@ -56,43 +214,63 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
 
       switch(action) {
           case 'DUPLICATES':
-              newText = [...new Set(text.split('\n'))].join('\n');
+              const uniqueLines = new Set<string>();
+              newText = text.split('\n').filter(line => {
+                  const trimmed = line.trim();
+                  if (trimmed.length === 0) return false;
+                  if (uniqueLines.has(trimmed)) return false;
+                  uniqueLines.add(trimmed);
+                  return true;
+              }).join('\n');
               break;
+
           case 'CLEANUP':
-              newText = text.split('\n').map(l => l.trim().replace(/\s+/g, ' ')).filter(l => l.length > 0).join('\n');
+              newText = text.split('\n')
+                  .map(l => l.trim().replace(/\s+/g, ' '))
+                  .filter(l => l.length > 0)
+                  .join('\n');
               break;
+
           case 'LIST':
-              if (text.includes('\n')) newText = text.split('\n').map(l => l.trim() ? `• ${l.trim()}` : l).join('\n');
-              else if (text.includes('. ')) newText = text.split('. ').filter(s => s.trim()).map(s => `• ${s.trim()}`).join('\n');
-              else newText = `• ${text}`;
-              break;
-          case 'GRAMMAR':
-              // Mock grammar fix: Sentence case and single spacing
-              newText = text.replace(/\s+/g, ' ').replace(/([.,!?])(?=[^\s])/g, '$1 ');
-              newText = newText.charAt(0).toUpperCase() + newText.slice(1);
-              break;
-          case 'CASE':
-              const mode = (caseModeRef.current + 1) % 4;
-              caseModeRef.current = mode;
-              switch (mode) {
-                  case 0: newText = text.toUpperCase(); break;
-                  case 1: newText = text.toLowerCase(); break;
-                  case 2: newText = text.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); break;
-                  case 3: newText = text.toLowerCase().replace(/(^\s*\w|[\.\!\?]\s*\w)/g, c => c.toUpperCase()); break;
+              let items: string[] = [];
+              if (text.includes('\n')) {
+                  items = text.split('\n');
+              } else if (text.match(/[.!?]\s/)) {
+                  items = text.split(/(?<=[.!?])\s+/);
+              } else if (text.includes(',')) {
+                   items = text.split(',');
+              } else {
+                  items = [text];
               }
+              
+              newText = items
+                .map(i => i.trim())
+                .filter(i => i.length > 0)
+                .map(i => {
+                    const clean = i.replace(/^[-*•]\s*/, '');
+                    return `• ${clean}`;
+                })
+                .join('\n');
               break;
-          case 'TRANSLATE':
-              alert("Language packs not found.");
-              return; // Don't close menu or update text
+
+          case 'GRAMMAR':
+              newText = text.replace(/\s+/g, ' ');
+              newText = newText.replace(/([.,!?])(?=[a-zA-Z])/g, '$1 ');
+              newText = newText.charAt(0).toUpperCase() + newText.slice(1);
+              newText = newText.replace(/([.!?]\s+)([a-z])/g, (match, p1, p2) => p1 + p2.toUpperCase());
+              newText = newText.replace(/\b i \b/g, ' I ');
+              break;
       }
       
-      updateContent(newText);
+      updateContentProgrammatically(newText);
       setIsAiMenuOpen(false);
   };
 
   // --- Save Handler ---
   const performSave = async (destination: 'CLIPBOARD' | 'NOTES') => {
+      const htmlContent = editorRef.current?.innerHTML || '';
       const content = editorRef.current?.innerText || '';
+      
       const category = destination === 'CLIPBOARD' ? 'clipboard' : 'notes';
       const timestamp = new Date().toLocaleString();
       
@@ -104,6 +282,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
              id: Date.now().toString(),
              title,
              content,
+             htmlContent,
              timestamp,
              category,
              tags: category === 'notes' ? ['#notes'] : []
@@ -114,19 +293,20 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
               ...item,
               title,
               content,
+              htmlContent,
               timestamp,
               category: category
           };
           await clipboardRepository.updateItem(item.id, { 
               title, 
               content, 
+              htmlContent,
               timestamp,
               category: category
           });
           
           if (destination === 'NOTES') {
               await clipboardRepository.addTagsToItems([item.id], ['#notes']);
-              // Locally update tags for the callback
               const newTags = Array.from(new Set([...finalItem.tags, '#notes']));
               finalItem.tags = newTags;
           }
@@ -145,6 +325,19 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
   const textColor = isDarkTheme ? 'text-white' : 'text-black';
   const headerBg = isDarkTheme ? 'bg-black border-zinc-900' : 'bg-white border-gray-200';
   const toolbarBg = isDarkTheme ? 'bg-[#121212] border-zinc-800' : 'bg-white border-gray-300';
+  const toolbarBtnClass = `w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl transition-all duration-200`;
+  
+  const getBtnStyle = (isActive: boolean) => {
+      if (isDarkTheme) {
+          return isActive 
+            ? { backgroundColor: accentColor, color: '#000000' } // Active Dark Mode (Gold Bg, Black Text)
+            : { color: '#A1A1AA' }; // Inactive Dark Mode (Zinc Text)
+      } else {
+          return isActive
+            ? { backgroundColor: accentColor, color: '#000000' } // Active Light Mode (Gold Bg, Black Text)
+            : { color: '#6B7280' }; // Inactive Light Mode (Gray Text)
+      }
+  };
 
   return (
     <div className={`h-screen w-full flex flex-col animate-fade-in font-sans relative ${bgColor} ${textColor}`}>
@@ -168,8 +361,20 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
         
         <div className="flex items-center space-x-4">
              <div className={`flex items-center space-x-3 ${isDarkTheme ? 'text-zinc-400' : 'text-gray-500'}`}>
-                 <button onClick={() => execCmd('undo')} className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg></button>
-                 <button onClick={() => execCmd('redo')} className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg></button>
+                 <button 
+                    onMouseDown={handleToolbarMouseDown}
+                    onClick={performUndo} 
+                    className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}
+                 >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                 </button>
+                 <button 
+                    onMouseDown={handleToolbarMouseDown}
+                    onClick={performRedo} 
+                    className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}
+                 >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg>
+                 </button>
              </div>
              <button onClick={() => setShowSaveDialog(true)} className="font-medium text-lg hover:opacity-80 transition-colors px-2" style={{ color: accentColor }}>Save</button>
         </div>
@@ -180,11 +385,16 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
         <div 
             ref={editorRef}
             contentEditable
+            spellCheck={true}
+            onInput={handleInput}
+            onKeyUp={handleEditorInteraction}
+            onMouseUp={handleEditorInteraction}
+            onTouchEnd={handleEditorInteraction}
             className={`w-full min-h-full p-6 focus:outline-none leading-relaxed whitespace-pre-wrap pb-48 ${isDarkTheme ? 'bg-black text-zinc-100' : 'bg-gray-50 text-gray-900'}`}
             style={{ fontSize: `${fontSize}px` }}
         />
         {!editorRef.current?.innerText && (
-            <div className="absolute top-6 left-6 text-zinc-600 pointer-events-none text-base">Content</div>
+            <div className="absolute top-6 left-6 text-zinc-600 pointer-events-none text-base">Type here...</div>
         )}
 
         {/* Help Overlay */}
@@ -192,8 +402,10 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
             <div className={`absolute inset-x-4 top-4 bottom-4 border rounded-2xl p-6 z-40 overflow-y-auto backdrop-blur-md shadow-2xl animate-fade-in ${isDarkTheme ? 'bg-[#121212]/95 border-gold/50' : 'bg-white/95 border-gray-300'}`} style={{ borderColor: isDarkTheme ? undefined : accentColor }}>
                  <h3 className="text-lg font-bold mb-4" style={{ color: accentColor }}>AI Tools Guide</h3>
                  <ul className={`space-y-4 text-sm leading-relaxed font-light ${isDarkTheme ? 'text-zinc-300' : 'text-gray-700'}`}>
-                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Remove Duplicates:</strong> Finds and deletes any repeated lines.</li>
-                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Clean Up:</strong> Removes empty lines and extra spaces.</li>
+                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Remove Duplicates:</strong> Finds and deletes any repeated lines to make lists shorter.</li>
+                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Clean Up:</strong> The "Fix All" button. Removes extra spaces, empty lines, and bad formatting.</li>
+                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Make List:</strong> Turns long text (lines, sentences, or commas) into a clean bulleted list.</li>
+                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Grammar Check:</strong> Fixes common mistakes like extra spaces, capitalization, and enables spell check.</li>
                  </ul>
             </div>
         )}
@@ -201,7 +413,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
 
       {/* --- AI MENU OVERLAY --- */}
       {isAiMenuOpen && (
-          <div className="absolute bottom-16 left-2 right-2 z-50 animate-fade-in-up">
+          <div className="absolute bottom-20 left-4 right-4 z-50 animate-fade-in-up">
                <div className="flex justify-end mb-2 mr-1">
                    <button 
                        onClick={() => setIsHelpOpen(!isHelpOpen)}
@@ -212,43 +424,82 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                    </button>
                </div>
                <div className={`border rounded-xl p-2 grid grid-cols-2 gap-2 shadow-2xl ${isDarkTheme ? 'bg-[#0A0A0A] border-zinc-800' : 'bg-white border-gray-200'}`}>
-                   {/* Cleaned up button generation */}
                    <AiButton label="Remove Duplicates" onClick={() => handleAiAction('DUPLICATES')} isDark={isDarkTheme} accentColor={accentColor} />
                    <AiButton label="Clean Up" onClick={() => handleAiAction('CLEANUP')} isDark={isDarkTheme} accentColor={accentColor} />
-                   <AiButton label="Case Converter" onClick={() => handleAiAction('CASE')} isDark={isDarkTheme} accentColor={accentColor} />
                    <AiButton label="Make List" onClick={() => handleAiAction('LIST')} isDark={isDarkTheme} accentColor={accentColor} />
-                   <AiButton label="Grammer Check" onClick={() => handleAiAction('GRAMMAR')} isDark={isDarkTheme} accentColor={accentColor} />
-                   <AiButton label="Translate" onClick={() => handleAiAction('TRANSLATE')} isDark={isDarkTheme} accentColor={accentColor} />
+                   <AiButton label="Grammar Check" onClick={() => handleAiAction('GRAMMAR')} isDark={isDarkTheme} accentColor={accentColor} />
                </div>
           </div>
       )}
 
       {/* --- TOOLBAR --- */}
-      <div className={`border-t px-2 py-3 flex items-center justify-between sticky bottom-0 z-40 w-full overflow-x-auto no-scrollbar ${toolbarBg}`}>
+      <div className={`border-t flex items-center w-full sticky bottom-0 z-40 ${toolbarBg}`}>
+          
+          {/* Fixed AI Button */}
           {isAiSupportOn && (
-              <button 
-                onClick={() => { setIsAiMenuOpen(!isAiMenuOpen); if (isAiMenuOpen) setIsHelpOpen(false); }}
-                className={`flex items-center justify-center w-10 h-10 rounded-lg transition-colors shrink-0 ${isAiMenuOpen ? 'text-black' : ''}`}
-                style={{ backgroundColor: isAiMenuOpen ? accentColor : 'transparent', color: isAiMenuOpen ? 'black' : accentColor }}
-              >
-                 <span className="font-bold text-lg font-serif italic">Ai</span>
-              </button>
+             <div className="pl-4 py-4 pr-2 border-r border-zinc-700/30">
+                <button 
+                  onClick={() => { setIsAiMenuOpen(!isAiMenuOpen); if (isAiMenuOpen) setIsHelpOpen(false); }}
+                  className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors ${isAiMenuOpen ? 'text-black' : ''}`}
+                  style={{ backgroundColor: isAiMenuOpen ? accentColor : 'transparent', color: isAiMenuOpen ? 'black' : accentColor }}
+                >
+                   <span className="font-bold text-xl font-serif italic">Ai</span>
+                </button>
+             </div>
           )}
 
-          <div className={`w-[1px] h-6 mx-1 ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-300'}`}></div>
+          {/* Scrollable Actions */}
+          <div className="flex-1 overflow-x-auto no-scrollbar flex items-center space-x-2 px-4 py-4">
+              
+              {/* Bold */}
+              <button 
+                onMouseDown={handleToolbarMouseDown}
+                onClick={() => execCmd('bold')} 
+                className={toolbarBtnClass}
+                style={getBtnStyle(isBoldActive)}
+              >
+                  <span className="font-bold font-serif text-xl">B</span>
+              </button>
+              
+              {/* Italic */}
+              <button 
+                onMouseDown={handleToolbarMouseDown}
+                onClick={() => execCmd('italic')} 
+                className={toolbarBtnClass}
+                style={getBtnStyle(isItalicActive)}
+              >
+                  <span className="italic font-serif text-xl">I</span>
+              </button>
+              
+              {/* Underline */}
+              <button 
+                onMouseDown={handleToolbarMouseDown}
+                onClick={() => execCmd('underline')} 
+                className={toolbarBtnClass}
+                style={getBtnStyle(isUnderlineActive)}
+              >
+                  <span className="underline font-serif text-xl">U</span>
+              </button>
+              
+              {/* Strikethrough */}
+              <button 
+                onMouseDown={handleToolbarMouseDown}
+                onClick={() => execCmd('strikeThrough')} 
+                className={toolbarBtnClass}
+                style={getBtnStyle(isStrikeActive)}
+              >
+                  <span className="line-through font-serif text-xl">S</span>
+              </button>
 
-          <div className="flex items-center space-x-1 shrink-0">
-              <button onClick={() => handleFontSize(-2)} className={`w-8 h-8 flex items-center justify-center text-xl ${isDarkTheme ? 'text-zinc-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>-</button>
-              <span className={`font-mono w-8 text-center text-xs ${isDarkTheme ? 'text-white' : 'text-black'}`}>{fontSize}</span>
-              <button onClick={() => handleFontSize(2)} className={`w-8 h-8 flex items-center justify-center text-xl ${isDarkTheme ? 'text-zinc-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>+</button>
-          </div>
-
-          <div className={`w-[1px] h-6 mx-1 ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-300'}`}></div>
-
-          <div className="flex items-center space-x-1 shrink-0">
-              <button onClick={() => execCmd('underline')} className={`w-10 h-10 flex items-center justify-center rounded-lg ${isDarkTheme ? 'text-zinc-400 hover:bg-zinc-800' : 'text-gray-500 hover:bg-gray-100'}`}><span className="underline font-serif text-xl">U</span></button>
-              <button onClick={() => execCmd('hiliteColor', accentColor)} className={`w-10 h-10 flex items-center justify-center rounded-lg ${isDarkTheme ? 'text-zinc-400 hover:bg-zinc-800' : 'text-gray-500 hover:bg-gray-100'}`}><div className="w-4 h-4 rounded-full" style={{ backgroundColor: accentColor }}></div></button>
-              <button onClick={() => execCmd('bold')} className={`w-10 h-10 flex items-center justify-center rounded-lg ${isDarkTheme ? 'text-zinc-400 hover:bg-zinc-800' : 'text-gray-500 hover:bg-gray-100'}`}><span className="font-bold font-serif text-xl">B</span></button>
+              {/* Case Converter - Replaces 3-dot menu */}
+               <button 
+                  onMouseDown={handleToolbarMouseDown}
+                  onClick={handleChangeCase}
+                  className={toolbarBtnClass}
+                  style={getBtnStyle(false)}
+               >
+                  <span className="font-serif text-xl">Aa</span>
+               </button>
           </div>
       </div>
 

@@ -11,12 +11,8 @@ interface SettingsContextType {
   // Feature Toggles
   isSmartRecognitionOn: boolean;
   toggleSmartRecognition: () => void;
-  isPopupViewOn: boolean;
-  togglePopupView: () => void;
   isAiSupportOn: boolean;
   toggleAiSupport: () => void;
-  translateLanguage: string;
-  setTranslateLanguage: (lang: string) => void;
 
   // Auto Backup
   autoBackupFrequency: string;
@@ -33,9 +29,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [readingFontSize, setReadingFontSize] = useState(16);
   
   const [isSmartRecognitionOn, setIsSmartRecognitionOn] = useState(true);
-  const [isPopupViewOn, setIsPopupViewOn] = useState(true);
   const [isAiSupportOn, setIsAiSupportOn] = useState(true);
-  const [translateLanguage, setTranslateLanguage] = useState('English');
 
   const [autoBackupFrequency, setAutoBackupFrequency] = useState('Off');
   const [backupDestination, setBackupDestination] = useState('Google');
@@ -44,7 +38,6 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const toggleTheme = (mode: 'DARK' | 'LIGHT' | 'SYSTEM') => setThemeMode(mode);
   const toggleSmartRecognition = () => setIsSmartRecognitionOn(prev => !prev);
-  const togglePopupView = () => setIsPopupViewOn(prev => !prev);
   const toggleAiSupport = () => setIsAiSupportOn(prev => !prev);
 
   return (
@@ -57,12 +50,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       setReadingFontSize,
       isSmartRecognitionOn,
       toggleSmartRecognition,
-      isPopupViewOn,
-      togglePopupView,
       isAiSupportOn,
       toggleAiSupport,
-      translateLanguage,
-      setTranslateLanguage,
       autoBackupFrequency,
       setAutoBackupFrequency,
       backupDestination,
