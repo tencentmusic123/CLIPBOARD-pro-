@@ -8,7 +8,7 @@ const SplashScreen: React.FC = () => {
   return (
     <div className="h-screen w-full bg-black flex flex-col items-center justify-center animate-fade-in font-sans">
       <h1 
-        className="text-4xl tracking-[0.2em] uppercase font-blanka"
+        className="text-4xl tracking-[0.2em] uppercase font-blanka animate-scale-in"
         style={{ color: GOLD }}
       >
         CLIPBOARD MAX

@@ -77,28 +77,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
   // --- CLIPBOARD SYNC LOGIC ---
 
-  // 1. Initial Check: If sync is enabled, try to sync on mount
+  // Check if we should prompt for permission (ONLY IF not enabled)
   useEffect(() => {
-    if (clipboardSyncEnabled) {
-      // Small delay to ensure document has focus if possible, though automated reads often fail
-      const t = setTimeout(() => checkSystemClipboard(), 500);
+    if (!clipboardSyncEnabled) {
+      // Small delay to prevent immediate popup on first render
+      const t = setTimeout(() => setShowPermissionModal(true), 1500);
       return () => clearTimeout(t);
-    } else {
-      // If not enabled, show the "Permission/Accessibility" style modal once
-      setTimeout(() => setShowPermissionModal(true), 1000);
     }
   }, [clipboardSyncEnabled]);
-
-  // 2. Focus Listener: Sync when app comes to foreground
-  useEffect(() => {
-    const handleFocus = () => {
-      if (clipboardSyncEnabled && activeTab === 'clipboard') {
-        checkSystemClipboard();
-      }
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [clipboardSyncEnabled, activeTab]);
 
   const checkSystemClipboard = async () => {
     try {
@@ -129,9 +115,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
         showToast("Synced from Clipboard");
       }
     } catch (err) {
-      // Auto-sync failures should be silent to avoid spamming the user
-      // Common causes: Document not focused, Permission Policy in iframe, or User Gesture required
-      console.warn("Auto-sync skipped: " + (err instanceof Error ? err.message : String(err)));
+      console.warn("Manual sync failed: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -141,6 +125,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
           await navigator.clipboard.readText(); 
           setClipboardSyncEnabled(true);
           setShowPermissionModal(false);
+          // Sync immediately when permission is granted
           checkSystemClipboard();
           showToast("Clipboard Access Granted");
       } catch (err: any) {
@@ -148,7 +133,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
           if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
               showToast("Permission denied. Check browser settings.");
           } else {
-              // Handle "Permissions Policy" or other specific errors
               showToast("Clipboard access blocked by browser.");
           }
       }
@@ -492,7 +476,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
       {/* --- HEADER --- */}
       <header className={`px-4 z-30 flex items-center h-16 transition-all duration-300 sticky top-0 backdrop-blur-xl border-b ${headerBg}`}>
-        <div className="max-w-5xl mx-auto w-full flex items-center h-full">
+        <div className="max-w-5xl mx-auto w-full flex items-center h-full animate-fade-in-down">
             {isSelectionMode ? (
                 <SelectionHeader 
                     selectedCount={selectedIds.size}
@@ -641,15 +625,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
               {loading ? (
                  <div className="text-center mt-32 font-mono text-sm tracking-widest opacity-60 animate-pulse" style={{ color: accentColor }}>LOADING...</div>
               ) : displayItems.length === 0 ? (
-                 <div className="flex flex-col items-center justify-center mt-32 opacity-40">
+                 <div className="flex flex-col items-center justify-center mt-32 opacity-40 animate-fade-in">
                      <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                      <span className="font-light tracking-wide">{activeTab === 'clipboard' ? 'Clipboard is empty' : 'No notes found'}</span>
                  </div>
               ) : (
-                displayItems.map(item => (
+                displayItems.map((item, index) => (
                   <div key={item.id} className="">
                       <GoldCard 
                         item={item} 
+                        index={index}
                         searchQuery={searchQuery}
                         isSelectionMode={isSelectionMode}
                         isSelected={selectedIds.has(item.id)}
@@ -669,7 +654,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
       {/* --- FLOATING ACTION BUTTON --- */}
       {!isSelectionMode && (
-        <div className="absolute bottom-24 right-6 z-20">
+        <div className="absolute bottom-24 right-6 z-20 animate-scale-in">
             <button 
                 onClick={onCreateNew} 
                 className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 group ${isDarkTheme ? 'bg-black text-white' : 'bg-white text-black'}`} 
@@ -697,10 +682,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
           </div>
       )}
 
-      {/* --- PERMISSION MODAL (Accessibility / Clipboard Sync) --- */}
+      {/* --- PERMISSION MODAL --- */}
       {showPermissionModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
               <div className={`border rounded-2xl p-6 w-full max-w-sm shadow-2xl ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+                   {/* ... Content same as before ... */}
                    <div className="flex flex-col items-center text-center mb-6">
                        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: `${accentColor}20` }}>
                            <svg className="w-8 h-8" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -831,6 +817,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
   );
 };
 
+// ... Sub-components remain the same ...
 // --- SUB-COMPONENTS ---
 
 const MenuItem: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (

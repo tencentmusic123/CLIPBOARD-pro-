@@ -11,6 +11,7 @@ import TagsScreen from './ui/screens/TagsScreen';
 import TagDetailScreen from './ui/screens/TagDetailScreen';
 import SettingsScreen from './ui/screens/SettingsScreen';
 import { ScreenName, ClipboardItem, ClipboardType } from './types';
+import { clipboardRepository } from './data/repository/ClipboardRepository';
 
 // App Content Component to use Context
 const AppContent: React.FC = () => {
@@ -25,6 +26,46 @@ const AppContent: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [isNewItem, setIsNewItem] = useState(false);
   const { isDarkTheme } = useSettings();
+
+  // --- STARTUP CLIPBOARD SYNC ---
+  useEffect(() => {
+    const performStartupSync = async () => {
+      // Direct check of localStorage to ensure we don't miss the check due to state hydration timing
+      const isSyncEnabled = localStorage.getItem('clipboard_sync_enabled') === 'true';
+      if (!isSyncEnabled) return;
+
+      try {
+        if (!document.hasFocus()) return;
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+           const latestItems = await clipboardRepository.getAllItems('DATE', 'DESC');
+           const latest = latestItems.find(i => i.category === 'clipboard' && !i.isDeleted);
+           
+           if (!latest || latest.content !== text) {
+               await clipboardRepository.addItem({
+                   id: Date.now().toString(),
+                   content: text,
+                   type: ClipboardType.TEXT,
+                   category: 'clipboard',
+                   timestamp: new Date().toLocaleString(),
+                   tags: ['#synced'],
+                   isPinned: false,
+                   isFavorite: false,
+                   isDeleted: false
+               });
+           }
+        }
+      } catch (e) {
+        // Silently fail if permission denied or no focus (normal behavior for web apps without user gesture)
+        console.warn("Startup sync skipped", e);
+      }
+    };
+
+    // Run once after a small delay to allow app to settle
+    const t = setTimeout(performStartupSync, 1000);
+    return () => clearTimeout(t);
+  }, []);
+  // ------------------------------
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -114,7 +155,9 @@ const AppContent: React.FC = () => {
 
   return (
     <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-black' : 'bg-[#F2F2F7]'}`}>
-      {renderScreen()}
+      <div key={currentScreen} className="w-full h-full animate-fade-in">
+          {renderScreen()}
+      </div>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface SettingsContextType {
   isDarkTheme: boolean;
@@ -35,10 +35,23 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [isSmartRecognitionOn, setIsSmartRecognitionOn] = useState(true);
   const [isAiSupportOn, setIsAiSupportOn] = useState(true);
   
-  const [clipboardSyncEnabled, setClipboardSyncEnabled] = useState(false);
+  const [clipboardSyncEnabled, setClipboardSyncEnabledState] = useState(false);
 
   const [autoBackupFrequency, setAutoBackupFrequency] = useState('Off');
   const [backupDestination, setBackupDestination] = useState('Google');
+
+  // Load Persistence
+  useEffect(() => {
+    const storedSync = localStorage.getItem('clipboard_sync_enabled');
+    if (storedSync) {
+        setClipboardSyncEnabledState(JSON.parse(storedSync));
+    }
+  }, []);
+
+  const setClipboardSyncEnabled = (enabled: boolean) => {
+      setClipboardSyncEnabledState(enabled);
+      localStorage.setItem('clipboard_sync_enabled', JSON.stringify(enabled));
+  };
 
   const isDarkTheme = themeMode === 'DARK' || (themeMode === 'SYSTEM' && true); // Mock system dark
 

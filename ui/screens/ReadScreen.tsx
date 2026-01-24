@@ -265,7 +265,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
 
          {/* Text Display */}
          <div 
-            className={`leading-relaxed whitespace-pre-wrap font-sans tracking-wide ${textColor}`} 
+            className={`w-full max-w-full break-words leading-relaxed whitespace-pre-wrap font-sans tracking-wide ${textColor}`} 
             style={{ fontSize: `${readingFontSize}px`, wordSpacing: '2px' }}
          >
              {shouldRenderHtml ? (

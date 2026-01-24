@@ -161,7 +161,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   };
 
   // --- Styles & Classes ---
-  const containerClass = `min-h-screen flex flex-col font-sans animate-fade-in ${isDarkTheme ? 'bg-black text-white' : 'bg-[#F2F2F7] text-black'}`;
+  // Updated: Changed min-h-screen to h-full to fit within animated container without breaking overflow
+  const containerClass = `h-full flex flex-col font-sans animate-fade-in ${isDarkTheme ? 'bg-black text-white' : 'bg-[#F2F2F7] text-black'}`;
   const headerClass = `px-6 py-5 flex items-center justify-center sticky top-0 z-20 border-b relative ${isDarkTheme ? 'bg-black/95 border-zinc-800' : 'bg-white/95 border-gray-200'}`;
   const sectionTitleClass = `text-xs font-bold tracking-[0.15em] uppercase mb-3 mt-8 px-4 opacity-50`;
   const cardClass = `mx-4 rounded-2xl border ${isDarkTheme ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-sm'}`;

@@ -4,6 +4,7 @@ import { useSettings } from '../context/SettingsContext';
 
 interface GoldCardProps {
   item: ClipboardItem;
+  index?: number; // Added for staggered animation
   searchQuery?: string;
   isSelectionMode?: boolean;
   isSelected?: boolean;
@@ -18,6 +19,7 @@ interface GoldCardProps {
 
 const GoldCard: React.FC<GoldCardProps> = ({ 
   item, 
+  index = 0,
   searchQuery = '', 
   isSelectionMode = false,
   isSelected = false,
@@ -183,14 +185,19 @@ const GoldCard: React.FC<GoldCardProps> = ({
     ? (isSelected ? 'bg-zinc-800' : 'bg-zinc-900/50') 
     : (isSelected ? 'bg-gray-100 ring-1 ring-inset ring-gray-300' : 'bg-white');
     
-  const hoverEffect = isDarkTheme ? 'hover:bg-zinc-800' : 'hover:shadow-md hover:-translate-y-[1px]';
+  const hoverEffect = isSelectionMode ? '' : (isDarkTheme ? 'hover:bg-zinc-800 hover:scale-[1.01]' : 'hover:shadow-lg hover:-translate-y-[2px] hover:scale-[1.01]');
+  const activeEffect = isSelectionMode ? '' : 'active:scale-95 active:shadow-inner';
   const textColor = isDarkTheme ? 'text-zinc-200' : 'text-gray-900';
   const tagColor = isDarkTheme ? 'text-zinc-500' : 'text-gray-500';
   const borderColor = isDarkTheme ? 'border-white/5' : 'border-gray-200/80';
 
+  // Animation stagger
+  const animationDelay = `${index * 50}ms`;
+
   return (
     <div 
-        className={`relative mb-3 transition-all duration-300 ease-out select-none touch-pan-y group ${isDraggable ? 'cursor-move' : 'cursor-pointer'} ${isSelectionMode ? 'mr-0' : ''}`}
+        className={`relative mb-3 transition-all duration-300 ease-out select-none touch-pan-y group animate-fade-in-up fill-mode-backwards ${isDraggable ? 'cursor-move' : 'cursor-pointer'} ${isSelectionMode ? 'mr-0' : ''}`}
+        style={{ animationDelay }}
         draggable={isDraggable && !isSelectionMode}
         onDragStart={handleDragStartInternal}
         onDragOver={onDragOver}
@@ -208,14 +215,14 @@ const GoldCard: React.FC<GoldCardProps> = ({
       {/* Badges: Pinned & Favorite */}
       <div className="absolute -top-2 -right-1 z-20 flex space-x-1">
           {item.isFavorite && (
-              <div className="bg-red-500 rounded-full p-1.5 shadow-sm border border-white dark:border-black">
+              <div className="bg-red-500 rounded-full p-1.5 shadow-sm border border-white dark:border-black animate-scale-in">
                   <svg width="8" height="8" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="white"/>
                   </svg>
               </div>
           )}
           {item.isPinned && (
-              <div className="bg-amber-400 rounded-full p-1.5 shadow-sm border border-white dark:border-black">
+              <div className="bg-amber-400 rounded-full p-1.5 shadow-sm border border-white dark:border-black animate-scale-in">
                   <svg width="8" height="8" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
                       <path d="M16 12V4H17V2H7V4H8V12L6 14V16H11V22H13V16H18V14L16 12Z" fill="white"/>
                   </svg>
@@ -226,21 +233,23 @@ const GoldCard: React.FC<GoldCardProps> = ({
       {/* Selection Overlay Indicator */}
       {isSelectionMode && (
           <div className={`absolute inset-y-0 right-4 flex items-center justify-end z-20 pointer-events-none transition-opacity duration-200 ${isSelected ? 'opacity-100' : 'opacity-20'}`}>
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'bg-gold border-gold' : 'border-gray-400'}`}>
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'bg-gold border-gold animate-scale-in' : 'border-gray-400'}`}>
                    {isSelected && <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
               </div>
           </div>
       )}
 
       <div 
-        className={`border rounded-2xl p-5 relative transition-all duration-300 shadow-sm ${cardBg} ${hoverEffect} ${borderColor}`}
+        className={`border rounded-2xl p-5 relative transition-all duration-300 shadow-sm ${cardBg} ${hoverEffect} ${activeEffect} ${borderColor}`}
       >
         <div className="flex justify-between items-start">
-            {/* TEXT CONTENT */}
-            <div className={`flex-1 pr-4 ${isSelectionMode ? 'opacity-80' : ''}`}>
-                <p className={`font-sans text-base font-medium leading-relaxed whitespace-normal break-words line-clamp-3 ${textColor}`}>
-                    {renderContent()}
-                </p>
+            {/* TEXT CONTENT - Dedicated Box with min-w-0 to fix overflow */}
+            <div className={`flex-1 min-w-0 pr-4 ${isSelectionMode ? 'opacity-80' : ''}`}>
+                <div className="w-full break-words">
+                    <p className={`font-sans text-base font-medium leading-relaxed whitespace-normal line-clamp-3 ${textColor}`}>
+                        {renderContent()}
+                    </p>
+                </div>
             </div>
 
             {/* ICONS (Type) */}
