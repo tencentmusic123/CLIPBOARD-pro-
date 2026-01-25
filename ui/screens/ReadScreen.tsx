@@ -2,17 +2,12 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ClipboardItem, ClipboardType } from '../../types';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { useSettings } from '../context/SettingsContext';
+import { detectSmartItems, SmartItem } from '../../util/SmartRecognition';
 
 interface ReadScreenProps {
   item: ClipboardItem;
   onBack: () => void;
   onEdit: (item: ClipboardItem) => void;
-}
-
-interface SmartItem {
-  type: 'PHONE' | 'EMAIL' | 'LINK' | 'LOCATION' | 'DATE';
-  value: string;
-  label?: string;
 }
 
 const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
@@ -46,31 +41,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
 
   const smartItems = useMemo<SmartItem[]>(() => {
     if (!isSmartRecognitionOn) return [];
-    
-    // We use plain content for smart recognition even if it's rich text
-    const text = currentItem.content;
-    const items: SmartItem[] = [];
-
-    const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
-    const phones = text.match(phoneRegex);
-    if (phones) phones.forEach(p => items.push({ type: 'PHONE', value: p, label: 'Call' }));
-
-    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-    const emails = text.match(emailRegex);
-    if (emails) emails.forEach(e => items.push({ type: 'EMAIL', value: e, label: 'Email' }));
-
-    const linkRegex = /https?:\/\/[^\s]+/g;
-    const links = text.match(linkRegex);
-    if (links) links.forEach(l => items.push({ type: 'LINK', value: l, label: 'Open' }));
-
-    if (currentItem.type === ClipboardType.LOCATION || text.includes('Street') || text.includes('Avenue')) {
-         items.push({ type: 'LOCATION', value: currentItem.content.split('\n')[0], label: 'Map' });
-    }
-    
-    if (currentItem.type === ClipboardType.PHONE && items.length === 0) items.push({ type: 'PHONE', value: currentItem.content, label: 'Call' });
-    if (currentItem.type === ClipboardType.LINK && items.length === 0) items.push({ type: 'LINK', value: currentItem.content, label: 'Open' });
-
-    return items;
+    return detectSmartItems(currentItem.content, currentItem.type);
   }, [currentItem, isSmartRecognitionOn]);
 
   const handleSmartAction = (smartItem: SmartItem) => {
