@@ -10,12 +10,20 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "android:init": "npx cap add android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:run": "npm run build && npx cap sync android && npx cap open android"
   },
   "dependencies": {
     "react-dom": "^19.2.3",
     "react": "^19.2.3",
-    "jszip": "3.10.1"
+    "jszip": "3.10.1",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/clipboard": "^6.0.2",
+    "@capacitor/app": "^6.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
@@ -27,6 +35,7 @@
     "@vitest/coverage-v8": "^2.1.9",
     "@testing-library/react": "^16.1.0",
     "@testing-library/jest-dom": "^6.6.3",
-    "jsdom": "^25.0.1"
+    "jsdom": "^25.0.1",
+    "@capacitor/cli": "^6.2.0"
   }
 }
