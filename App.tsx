@@ -71,7 +71,7 @@ const AppContent: React.FC = () => {
 
   // --- BACK BUTTON HANDLER ---
   useEffect(() => {
-    const handleBackButton = CapApp.addListener('backButton', ({ canGoBack }) => {
+    const handleBackButton = CapApp.addListener('backButton', () => {
       if (historyStack.length > 0) {
         goBack();
       } else if (currentScreen !== 'HOME') {
