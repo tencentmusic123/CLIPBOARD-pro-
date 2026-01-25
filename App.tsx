@@ -12,6 +12,8 @@ import TagDetailScreen from './ui/screens/TagDetailScreen';
 import SettingsScreen from './ui/screens/SettingsScreen';
 import { ScreenName, ClipboardItem, ClipboardType } from './types';
 import { clipboardRepository } from './data/repository/ClipboardRepository';
+import { Clipboard } from '@capacitor/clipboard';
+import { App as CapApp } from '@capacitor/app';
 
 // App Content Component to use Context
 const AppContent: React.FC = () => {
@@ -36,7 +38,7 @@ const AppContent: React.FC = () => {
 
       try {
         if (!document.hasFocus()) return;
-        const text = await navigator.clipboard.readText();
+        const { value: text } = await Clipboard.read();
         if (text && text.trim()) {
            const latestItems = await clipboardRepository.getAllItems('DATE', 'DESC');
            const latest = latestItems.find(i => i.category === 'clipboard' && !i.isDeleted);
@@ -65,6 +67,24 @@ const AppContent: React.FC = () => {
     const t = setTimeout(performStartupSync, 1000);
     return () => clearTimeout(t);
   }, []);
+  // ------------------------------
+
+  // --- BACK BUTTON HANDLER ---
+  useEffect(() => {
+    const handleBackButton = CapApp.addListener('backButton', ({ canGoBack }) => {
+      if (historyStack.length > 0) {
+        goBack();
+      } else if (currentScreen !== 'HOME') {
+        setCurrentScreen('HOME');
+      } else {
+        CapApp.exitApp();
+      }
+    });
+
+    return () => {
+      handleBackButton.then(listener => listener.remove());
+    };
+  }, [historyStack, currentScreen]);
   // ------------------------------
 
   useEffect(() => {

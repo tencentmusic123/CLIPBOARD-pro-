@@ -6,6 +6,7 @@ import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { ClipboardItem, ScreenName, ClipboardType, SortOption, SortDirection } from '../../types';
 import { useSettings } from '../context/SettingsContext';
 import JSZip from 'jszip';
+import { Clipboard } from '@capacitor/clipboard';
 
 interface HomeScreenProps {
     onNavigate: (screen: ScreenName) => void;
@@ -100,7 +101,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       // Pre-check: Browsers often require focus for readText
       if (!document.hasFocus()) return;
 
-      const text = await navigator.clipboard.readText();
+      const { value: text } = await Clipboard.read();
       if (!text || !text.trim()) return;
 
       // Check against the latest item in the repository (to avoid duplicates)
@@ -130,8 +131,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
   const handleGrantPermission = async () => {
       try {
-          // Triggering readText() inside a click handler satisfies "User Gesture" requirements
-          await navigator.clipboard.readText(); 
+          // Triggering read() inside a click handler satisfies "User Gesture" requirements
+          await Clipboard.read(); 
           setClipboardSyncEnabled(true);
           setShowPermissionModal(false);
           // Sync immediately when permission is granted
@@ -296,7 +297,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       const textToCopy = selectedItems.map(i => i.content).join('\n\n');
       
       try {
-        await navigator.clipboard.writeText(textToCopy);
+        await Clipboard.write({ string: textToCopy });
         showToast("Copied to system clipboard");
       } catch (err) {
         console.warn("Clipboard API failed, trying fallback", err);
@@ -343,7 +344,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
               console.error(err);
           }
       } else {
-          navigator.clipboard.writeText(textToShare);
+          await Clipboard.write({ string: textToShare });
           showToast("Copied to clipboard for sharing");
       }
       exitSelectionMode();
@@ -358,7 +359,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       if (targetCategory === 'clipboard') {
           const textToCopy = selectedItems.map(i => i.content).join('\n\n');
           try {
-            await navigator.clipboard.writeText(textToCopy);
+            await Clipboard.write({ string: textToCopy });
           } catch (err) {
             console.warn("Failed to write to system clipboard during copy-to-clipboard action");
           }

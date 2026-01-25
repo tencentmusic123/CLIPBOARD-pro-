@@ -4,6 +4,7 @@ import { ClipboardItem, ClipboardType } from '../../types';
 import GoldCard from '../components/GoldCard';
 import JSZip from 'jszip';
 import { useSettings } from '../context/SettingsContext';
+import { Clipboard } from '@capacitor/clipboard';
 
 interface FavoriteScreenProps {
   onBack: () => void;
@@ -144,7 +145,7 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
       if (navigator.share) {
           navigator.share({ title: 'Shared Clips', text: textToShare });
       } else {
-          navigator.clipboard.writeText(textToShare);
+          await Clipboard.write({ string: textToShare });
           alert("Copied to clipboard for sharing");
       }
       exitSelectionMode();
