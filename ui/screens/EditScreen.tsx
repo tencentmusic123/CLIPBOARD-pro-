@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ClipboardItem } from '../../types';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { useSettings } from '../context/SettingsContext';
+import { removeDuplicates, cleanupFormat, convertToList, fixGrammar, changeCase } from '../../util/AITextProcessor';
 
 interface EditScreenProps {
   item: ClipboardItem;
@@ -186,18 +187,11 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
   const handleChangeCase = () => {
       if (!editorRef.current) return;
       const text = editorRef.current.innerText;
-      let newText = text;
       
       const mode = (caseModeRef.current + 1) % 4;
       caseModeRef.current = mode;
       
-      switch (mode) {
-          case 0: newText = text.toUpperCase(); break; // UPPERCASE
-          case 1: newText = text.toLowerCase(); break; // lowercase
-          case 2: newText = text.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); break; // Title Case
-          case 3: newText = text.toLowerCase().replace(/(^\s*\w|[\.\!\?]\s*\w)/g, c => c.toUpperCase()); break; // Sentence case
-      }
-      
+      const newText = changeCase(text, mode);
       updateContentProgrammatically(newText);
   };
 
@@ -214,51 +208,19 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
 
       switch(action) {
           case 'DUPLICATES':
-              const uniqueLines = new Set<string>();
-              newText = text.split('\n').filter(line => {
-                  const trimmed = line.trim();
-                  if (trimmed.length === 0) return false;
-                  if (uniqueLines.has(trimmed)) return false;
-                  uniqueLines.add(trimmed);
-                  return true;
-              }).join('\n');
+              newText = removeDuplicates(text);
               break;
 
           case 'CLEANUP':
-              newText = text.split('\n')
-                  .map(l => l.trim().replace(/\s+/g, ' '))
-                  .filter(l => l.length > 0)
-                  .join('\n');
+              newText = cleanupFormat(text);
               break;
 
           case 'LIST':
-              let items: string[] = [];
-              if (text.includes('\n')) {
-                  items = text.split('\n');
-              } else if (text.match(/[.!?]\s/)) {
-                  items = text.split(/(?<=[.!?])\s+/);
-              } else if (text.includes(',')) {
-                   items = text.split(',');
-              } else {
-                  items = [text];
-              }
-              
-              newText = items
-                .map(i => i.trim())
-                .filter(i => i.length > 0)
-                .map(i => {
-                    const clean = i.replace(/^[-*•]\s*/, '');
-                    return `• ${clean}`;
-                })
-                .join('\n');
+              newText = convertToList(text);
               break;
 
           case 'GRAMMAR':
-              newText = text.replace(/\s+/g, ' ');
-              newText = newText.replace(/([.,!?])(?=[a-zA-Z])/g, '$1 ');
-              newText = newText.charAt(0).toUpperCase() + newText.slice(1);
-              newText = newText.replace(/([.!?]\s+)([a-z])/g, (match, p1, p2) => p1 + p2.toUpperCase());
-              newText = newText.replace(/\b i \b/g, ' I ');
+              newText = fixGrammar(text);
               break;
       }
       

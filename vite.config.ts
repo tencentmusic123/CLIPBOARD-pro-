@@ -18,6 +18,20 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      test: {
+        globals: true,
+        environment: 'jsdom',
+        setupFiles: './__tests__/setup.ts',
+        coverage: {
+          reporter: ['text', 'json', 'html'],
+          exclude: [
+            'node_modules/',
+            '__tests__/',
+            '*.config.ts',
+            'ui/screens/SplashScreen.tsx'
+          ]
+        }
       }
     };
 });
