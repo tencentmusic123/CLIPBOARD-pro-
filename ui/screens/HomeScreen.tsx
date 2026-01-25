@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import GoldCard from '../components/GoldCard';
 import BottomNav from '../components/BottomNav';
 import SideBar from '../components/SideBar';
@@ -59,6 +59,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
   // --- STATE: Item Actions ---
   const [activeItemMenuId, setActiveItemMenuId] = useState<string | null>(null);
+
+  // --- STATE: Animation ---
+  const [animationClass, setAnimationClass] = useState('animate-fade-in');
+  const prevTabRef = useRef(activeTab);
+
+  // --- REFS: Touch Handling ---
+  const touchStartRef = useRef<{x: number, y: number} | null>(null);
+  const touchEndRef = useRef<{x: number, y: number} | null>(null);
+  const minSwipeDistance = 50;
 
   // --- DATA FETCHING ---
   const fetchData = async () => {
@@ -142,6 +151,55 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
   const showToast = (msg: string) => {
       setToastMessage(msg);
       setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // --- ANIMATION & TAB LOGIC ---
+  useEffect(() => {
+      if (prevTabRef.current !== activeTab) {
+          if (activeTab === 'notes') {
+              // Coming from Clipboard (Left) -> Slide In Right
+              setAnimationClass('animate-slide-in-right');
+          } else {
+              // Coming from Notes (Right) -> Slide In Left
+              setAnimationClass('animate-slide-in-left');
+          }
+          prevTabRef.current = activeTab;
+      }
+  }, [activeTab]);
+
+  // --- TOUCH HANDLERS ---
+  const onTouchStart = (e: React.TouchEvent) => {
+      touchEndRef.current = null;
+      touchStartRef.current = {
+          x: e.targetTouches[0].clientX,
+          y: e.targetTouches[0].clientY
+      };
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+      touchEndRef.current = {
+          x: e.targetTouches[0].clientX,
+          y: e.targetTouches[0].clientY
+      };
+  };
+
+  const onTouchEnd = () => {
+      if (!touchStartRef.current || !touchEndRef.current) return;
+      
+      const distanceX = touchStartRef.current.x - touchEndRef.current.x;
+      const distanceY = touchStartRef.current.y - touchEndRef.current.y;
+      const isLeftSwipe = distanceX > minSwipeDistance;
+      const isRightSwipe = distanceX < -minSwipeDistance;
+      
+      // We only care about horizontal swipes if they are significantly horizontal
+      if (Math.abs(distanceX) > Math.abs(distanceY)) {
+          if (isLeftSwipe && activeTab === 'clipboard') {
+              onTabChange('notes');
+          }
+          if (isRightSwipe && activeTab === 'notes') {
+              onTabChange('clipboard');
+          }
+      }
   };
 
   // --- COMPUTED VALUES ---
@@ -470,6 +528,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
     <div 
         className={`relative flex flex-col h-full ${isDarkTheme ? 'bg-black text-white' : 'bg-[#F2F2F7] text-gray-900'}`} 
         onClick={handleGlobalClick}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
     >
       
       <SideBar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onNavigate={onNavigate} />
@@ -621,11 +682,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
       {/* --- LIST CONTENT --- */}
       <main className="flex-1 px-4 pb-24 pt-4 overflow-y-auto no-scrollbar scroll-smooth w-full" onClick={handleGlobalClick}>
-          <div className="max-w-5xl mx-auto w-full">
+          {/* Key forces re-render to trigger animation when tab changes */}
+          <div key={activeTab} className={`max-w-5xl mx-auto w-full ${animationClass}`}>
               {loading ? (
                  <div className="text-center mt-32 font-mono text-sm tracking-widest opacity-60 animate-pulse" style={{ color: accentColor }}>LOADING...</div>
               ) : displayItems.length === 0 ? (
-                 <div className="flex flex-col items-center justify-center mt-32 opacity-40 animate-fade-in">
+                 <div className="flex flex-col items-center justify-center mt-32 opacity-40">
                      <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                      <span className="font-light tracking-wide">{activeTab === 'clipboard' ? 'Clipboard is empty' : 'No notes found'}</span>
                  </div>
