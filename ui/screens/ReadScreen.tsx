@@ -3,6 +3,7 @@ import { ClipboardItem, ClipboardType } from '../../types';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { useSettings } from '../context/SettingsContext';
 import { detectSmartItems, SmartItem } from '../../util/SmartRecognition';
+import { Clipboard } from '@capacitor/clipboard';
 
 interface ReadScreenProps {
   item: ClipboardItem;
@@ -59,7 +60,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
           case 'EDIT': onEdit(currentItem); break;
           case 'COPY':
               try {
-                  await navigator.clipboard.writeText(currentItem.content);
+                  await Clipboard.write({ string: currentItem.content });
                   showToast("Copied to clipboard");
               } catch (e) {
                   showToast("Failed to copy");
@@ -68,7 +69,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
           case 'SHARE': 
               if (navigator.share) navigator.share({ title: 'Clip', text: currentItem.content });
               else { 
-                  navigator.clipboard.writeText(currentItem.content); 
+                  await Clipboard.write({ string: currentItem.content }); 
                   showToast("Copied to clipboard");
               }
               break;
@@ -86,7 +87,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
                // If copying TO clipboard, try to sync with system
                if (targetCategory === 'clipboard') {
                    try {
-                       await navigator.clipboard.writeText(currentItem.content);
+                       await Clipboard.write({ string: currentItem.content });
                    } catch (e) {
                        console.warn("System clipboard write failed");
                    }

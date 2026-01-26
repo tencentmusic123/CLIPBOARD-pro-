@@ -3,6 +3,7 @@ import { ClipboardItem } from '../../types';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { useSettings } from '../context/SettingsContext';
 import { removeDuplicates, cleanupFormat, convertToList, fixGrammar, changeCase } from '../../util/AITextProcessor';
+import { Clipboard } from '@capacitor/clipboard';
 
 interface EditScreenProps {
   item: ClipboardItem;
@@ -275,7 +276,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
       }
       
       if (destination === 'CLIPBOARD') {
-          navigator.clipboard.writeText(content);
+          await Clipboard.write({ string: content });
       }
       
       setShowSaveDialog(false);

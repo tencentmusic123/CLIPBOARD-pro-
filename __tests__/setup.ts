@@ -31,7 +31,7 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock
 });
 
-// Mock navigator.clipboard
+// Mock navigator.clipboard (for web compatibility)
 Object.defineProperty(navigator, 'clipboard', {
   value: {
     writeText: vi.fn(() => Promise.resolve()),
@@ -39,6 +39,22 @@ Object.defineProperty(navigator, 'clipboard', {
   },
   writable: true
 });
+
+// Mock Capacitor Clipboard API
+vi.mock('@capacitor/clipboard', () => ({
+  Clipboard: {
+    write: vi.fn(({ string }) => Promise.resolve()),
+    read: vi.fn(() => Promise.resolve({ value: '', type: 'text/plain' }))
+  }
+}));
+
+// Mock Capacitor App API
+vi.mock('@capacitor/app', () => ({
+  App: {
+    addListener: vi.fn(() => Promise.resolve({ remove: vi.fn() })),
+    exitApp: vi.fn(() => Promise.resolve())
+  }
+}));
 
 // Cleanup after each test
 afterEach(() => {
