@@ -90,7 +90,7 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentScreen('HOME');
-    }, 2500);
+    }, 1200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -174,7 +174,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-black' : 'bg-[#F2F2F7]'}`}>
+    <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-zinc-950' : 'bg-gray-50'}`}>
       <div key={currentScreen} className="w-full h-full animate-fade-in">
           {renderScreen()}
       </div>

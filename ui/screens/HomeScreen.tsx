@@ -523,11 +523,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
   // --- RENDER HELPERS ---
   const textColor = isDarkTheme ? 'text-white' : 'text-gray-900';
   const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-gray-200';
-  const headerBg = isDarkTheme ? 'bg-black/80 border-white/5' : 'bg-white/80 border-black/5';
+  const headerBg = isDarkTheme ? 'bg-gradient-to-b from-zinc-950 to-zinc-900 border-zinc-800' : 'bg-gradient-to-b from-blue-600 to-blue-700 border-blue-800';
 
   return (
     <div 
-        className={`relative flex flex-col h-full ${isDarkTheme ? 'bg-black text-white' : 'bg-[#F2F2F7] text-gray-900'}`} 
+        className={`relative flex flex-col h-full ${isDarkTheme ? 'bg-zinc-950 text-white' : 'bg-gray-50 text-gray-900'}`} 
         onClick={handleGlobalClick}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -537,7 +537,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       <SideBar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onNavigate={onNavigate} />
 
       {/* --- HEADER --- */}
-      <header className={`px-4 z-30 flex items-center h-16 transition-all duration-300 sticky top-0 backdrop-blur-xl border-b ${headerBg}`}>
+      <header className={`px-4 z-30 flex items-center h-24 transition-all duration-300 sticky top-0 backdrop-blur-xl border-b ${headerBg} shadow-lg`}>
         <div className="max-w-5xl mx-auto w-full flex items-center h-full animate-fade-in-down">
             {isSelectionMode ? (
                 <SelectionHeader 
@@ -576,7 +576,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       
       {/* --- SORT MENU (Premium Glass Dropdown) --- */}
       {isSortMenuOpen && (
-          <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-4 z-40 w-56 animate-scale-in origin-top-right">
+          <div onClick={(e) => e.stopPropagation()} className="absolute top-24 right-4 z-40 w-56 animate-scale-in origin-top-right">
               <div className={`rounded-3xl p-4 shadow-2xl border backdrop-blur-2xl ${overlayBg}`}>
                   <div className="flex justify-between items-center mb-4 px-2">
                       <span className={`text-xs font-bold uppercase tracking-widest ${isDarkTheme ? 'text-zinc-500' : 'text-gray-400'}`}>Sort By</span>
@@ -606,7 +606,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
       {/* --- FILTER MENU (Premium Glass Dropdown) --- */}
       {isFilterOpen && (
-        <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-2 left-2 z-40 animate-fade-in-down origin-top max-w-lg mx-auto">
+        <div onClick={(e) => e.stopPropagation()} className="absolute top-24 right-2 left-2 z-40 animate-fade-in-down origin-top max-w-lg mx-auto">
              <div className={`rounded-3xl p-6 shadow-2xl border backdrop-blur-2xl ${overlayBg}`}>
                 
                 {/* Section: View */}
@@ -690,7 +690,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
               ) : displayItems.length === 0 ? (
                  <div className="flex flex-col items-center justify-center mt-32 opacity-40">
                      <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                     <span className="font-light tracking-wide">{activeTab === 'clipboard' ? 'Clipboard is empty' : 'No notes found'}</span>
+                     <span className="font-light tracking-wide text-lg">{activeTab === 'clipboard' ? 'No clips' : 'No notes'}</span>
                  </div>
               ) : (
                 displayItems.map((item, index) => (
@@ -948,28 +948,33 @@ const SearchHeader = ({ query, onQueryChange, onClose, textColor, accentColor }:
     </div>
 );
 
-const DefaultHeader = ({ accentColor, textColor, isSortMenuOpen, isFilterOpen, onMenuOpen, onSearchOpen, onSortToggle, onFilterToggle }: any) => (
+const DefaultHeader = ({ accentColor, textColor, isSortMenuOpen, isFilterOpen, onMenuOpen, onSearchOpen, onSortToggle, onFilterToggle }: any) => {
+    const { isDarkTheme } = useSettings();
+    const buttonColor = isDarkTheme ? accentColor : 'white';
+    
+    return (
     <div className="flex items-center justify-between w-full">
         <div className="flex items-center space-x-4">
-            <button onClick={onMenuOpen} className="p-1 hover:opacity-70 transition-opacity" style={{ color: accentColor }}>
+            <button onClick={onMenuOpen} className="p-1 hover:opacity-70 transition-opacity" style={{ color: buttonColor }}>
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10" /></svg>
             </button>
-            <h2 className="text-sm font-bold tracking-widest uppercase" style={{ color: accentColor }}>CLIPBOARD MAX</h2>
+            <h2 className="text-xl font-bold tracking-widest uppercase" style={{ color: isDarkTheme ? accentColor : 'white' }}>CLIPBOARD MAX</h2>
         </div>
         <div className="flex items-center space-x-2">
-            <button onClick={onSearchOpen} className={`p-2 rounded-full hover:bg-white/5 transition-colors ${textColor}`}>
+            <button onClick={onSearchOpen} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: buttonColor }}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </button>
-            <button onClick={onSortToggle} className={`p-2 rounded-full hover:bg-white/5 transition-colors ${isSortMenuOpen ? 'text-gold' : textColor}`} style={{ color: isSortMenuOpen ? accentColor : undefined }}>
+            <button onClick={onSortToggle} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: isSortMenuOpen ? accentColor : buttonColor }}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>
             </button>
-            <button onClick={onFilterToggle} className={`p-2 rounded-full hover:bg-white/5 transition-colors ${isFilterOpen ? 'text-gold' : textColor}`} style={{ color: isFilterOpen ? accentColor : undefined }}>
+            <button onClick={onFilterToggle} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: isFilterOpen ? accentColor : buttonColor }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
             </button>
         </div>
     </div>
-);
+    );
+};
 
 export default HomeScreen;
