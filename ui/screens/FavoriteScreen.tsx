@@ -137,8 +137,7 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
       fetchFavorites();
   };
 
-  const handleShare = () => {
-    const handleShare = async () => {
+  const handleShare = async () => {
       const textToShare = filteredItems
         .filter(i => selectedIds.has(i.id))
         .map(i => i.content).join('\n\n');
