@@ -523,7 +523,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
   // --- RENDER HELPERS ---
   const textColor = isDarkTheme ? 'text-white' : 'text-gray-900';
   const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-gray-200';
-  const headerBg = isDarkTheme ? 'bg-black/80 border-white/5' : 'bg-white/80 border-black/5';
+  const headerBg = isDarkTheme ? 'bg-gradient-to-b from-zinc-900 to-zinc-900/95 border-white/10' : 'bg-gradient-to-b from-indigo-50 to-white/95 border-indigo-200/30';
 
   return (
     <div 
@@ -537,7 +537,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       <SideBar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onNavigate={onNavigate} />
 
       {/* --- HEADER --- */}
-      <header className={`px-4 z-30 flex items-center h-16 transition-all duration-300 sticky top-0 backdrop-blur-xl border-b ${headerBg}`}>
+      <header className={`px-4 z-30 flex items-center h-24 transition-all duration-300 sticky top-0 backdrop-blur-xl border-b ${headerBg}`}>
         <div className="max-w-5xl mx-auto w-full flex items-center h-full animate-fade-in-down">
             {isSelectionMode ? (
                 <SelectionHeader 
@@ -576,7 +576,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       
       {/* --- SORT MENU (Premium Glass Dropdown) --- */}
       {isSortMenuOpen && (
-          <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-4 z-40 w-56 animate-scale-in origin-top-right">
+          <div onClick={(e) => e.stopPropagation()} className="absolute top-24 right-4 z-40 w-56 animate-scale-in origin-top-right">
               <div className={`rounded-3xl p-4 shadow-2xl border backdrop-blur-2xl ${overlayBg}`}>
                   <div className="flex justify-between items-center mb-4 px-2">
                       <span className={`text-xs font-bold uppercase tracking-widest ${isDarkTheme ? 'text-zinc-500' : 'text-gray-400'}`}>Sort By</span>
@@ -606,7 +606,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
       {/* --- FILTER MENU (Premium Glass Dropdown) --- */}
       {isFilterOpen && (
-        <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-2 left-2 z-40 animate-fade-in-down origin-top max-w-lg mx-auto">
+        <div onClick={(e) => e.stopPropagation()} className="absolute top-24 right-2 left-2 z-40 animate-fade-in-down origin-top max-w-lg mx-auto">
              <div className={`rounded-3xl p-6 shadow-2xl border backdrop-blur-2xl ${overlayBg}`}>
                 
                 {/* Section: View */}
@@ -665,7 +665,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
       {/* --- MORE OPTIONS MENU (Selection Mode) --- */}
       {showMoreMenu && isSelectionMode && (
-          <div onClick={(e) => e.stopPropagation()} className="absolute top-16 right-4 z-50 animate-scale-in origin-top-right">
+          <div onClick={(e) => e.stopPropagation()} className="absolute top-24 right-4 z-50 animate-scale-in origin-top-right">
               <div className={`border rounded-2xl py-2 w-52 shadow-2xl backdrop-blur-xl ${overlayBg}`}>
                   <MenuItem label="Copy" onClick={handleBulkCopy} />
                   <MenuItem label="Merge" onClick={handleMerge} />
@@ -690,7 +690,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
               ) : displayItems.length === 0 ? (
                  <div className="flex flex-col items-center justify-center mt-32 opacity-40">
                      <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                     <span className="font-light tracking-wide">{activeTab === 'clipboard' ? 'Clipboard is empty' : 'No notes found'}</span>
+                     <span className="font-light tracking-wide">
+                       {searchQuery ? 'No results found' : 
+                        filter.type !== 'ALL' || filter.tag !== 'All' ? 'No items match this filter' :
+                        activeTab === 'clipboard' ? 'No clips' : 'No notes'}
+                     </span>
                  </div>
               ) : (
                 displayItems.map((item, index) => (
@@ -954,7 +958,7 @@ const DefaultHeader = ({ accentColor, textColor, isSortMenuOpen, isFilterOpen, o
             <button onClick={onMenuOpen} className="p-1 hover:opacity-70 transition-opacity" style={{ color: accentColor }}>
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10" /></svg>
             </button>
-            <h2 className="text-sm font-bold tracking-widest uppercase" style={{ color: accentColor }}>CLIPBOARD MAX</h2>
+            <h2 className="text-lg font-bold tracking-widest uppercase" style={{ color: accentColor }}>CLIPBOARD MAX</h2>
         </div>
         <div className="flex items-center space-x-2">
             <button onClick={onSearchOpen} className={`p-2 rounded-full hover:bg-white/5 transition-colors ${textColor}`}>

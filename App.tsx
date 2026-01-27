@@ -90,7 +90,7 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentScreen('HOME');
-    }, 2500);
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
