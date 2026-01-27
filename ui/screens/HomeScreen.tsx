@@ -108,9 +108,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       // Check against all items to avoid duplicates and prevent syncing trash
       const latestItems = await clipboardRepository.getAllItems('DATE', 'DESC');
       
-      // Check if this content already exists (not deleted)
-      const isDuplicate = latestItems.some(i => 
-        !i.isDeleted && i.content === text
+      // Check if this content already exists in clipboard items (not deleted)
+      const isDuplicate = latestItems.some(i =>
+        i.category === 'clipboard' && !i.isDeleted && i.content === text
       );
       
       if (!isDuplicate) {
