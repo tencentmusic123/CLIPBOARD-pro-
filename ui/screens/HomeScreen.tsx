@@ -7,6 +7,7 @@ import { ClipboardItem, ScreenName, ClipboardType, SortOption, SortDirection } f
 import { useSettings } from '../context/SettingsContext';
 import JSZip from 'jszip';
 import { Clipboard } from '@capacitor/clipboard';
+import { detectClipboardType } from '../../util/SmartRecognition';
 
 interface HomeScreenProps {
     onNavigate: (screen: ScreenName) => void;
@@ -104,15 +105,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       const { value: text } = await Clipboard.read();
       if (!text || !text.trim()) return;
 
-      // Check against the latest item in the repository (to avoid duplicates)
+      // Check against all items to avoid duplicates and prevent syncing trash
       const latestItems = await clipboardRepository.getAllItems('DATE', 'DESC');
-      const latest = latestItems.find(i => i.category === 'clipboard' && !i.isDeleted);
-
-      if (!latest || latest.content !== text) {
+      
+      // Check if this content already exists (not deleted)
+      const isDuplicate = latestItems.some(i => 
+        !i.isDeleted && i.content === text
+      );
+      
+      if (!isDuplicate) {
+        const detectedType = detectClipboardType(text);
         const newItem: ClipboardItem = {
            id: Date.now().toString(),
            content: text,
-           type: ClipboardType.TEXT, // Could add logic to detect LINK/PHONE
+           type: detectedType,
            category: 'clipboard',
            timestamp: new Date().toLocaleString(),
            tags: ['#synced'],

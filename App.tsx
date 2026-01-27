@@ -14,6 +14,7 @@ import { ScreenName, ClipboardItem, ClipboardType } from './types';
 import { clipboardRepository } from './data/repository/ClipboardRepository';
 import { Clipboard } from '@capacitor/clipboard';
 import { App as CapApp } from '@capacitor/app';
+import { detectClipboardType } from './util/SmartRecognition';
 
 // App Content Component to use Context
 const AppContent: React.FC = () => {
@@ -43,11 +44,17 @@ const AppContent: React.FC = () => {
            const latestItems = await clipboardRepository.getAllItems('DATE', 'DESC');
            const latest = latestItems.find(i => i.category === 'clipboard' && !i.isDeleted);
            
-           if (!latest || latest.content !== text) {
+           // Check for duplicates and trash
+           const isDuplicate = latestItems.some(i => 
+             !i.isDeleted && i.content === text
+           );
+           
+           if (!isDuplicate) {
+               const detectedType = detectClipboardType(text);
                await clipboardRepository.addItem({
                    id: Date.now().toString(),
                    content: text,
-                   type: ClipboardType.TEXT,
+                   type: detectedType,
                    category: 'clipboard',
                    timestamp: new Date().toLocaleString(),
                    tags: ['#synced'],

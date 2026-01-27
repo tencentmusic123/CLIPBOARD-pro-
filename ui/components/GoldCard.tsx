@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { ClipboardItem, ClipboardType } from '../../types';
 import { useSettings } from '../context/SettingsContext';
+import { detectSmartItems } from '../../util/SmartRecognition';
 
 interface GoldCardProps {
   item: ClipboardItem;
@@ -31,12 +32,15 @@ const GoldCard: React.FC<GoldCardProps> = ({
   onDragOver,
   onDrop
 }) => {
-  const { accentColor, isDarkTheme } = useSettings();
+  const { accentColor, isDarkTheme, isSmartRecognitionOn } = useSettings();
   
   // Logic Refs
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startCoords = useRef<{ x: number, y: number } | null>(null); // For Long Press Threshold
   const isDragging = useRef(false); // Distinction between click/longpress vs scroll/drag
+
+  // Detect smart items for preview badge
+  const smartItems = isSmartRecognitionOn ? detectSmartItems(item.content, item.type) : [];
 
   // --- Long Press & Click Logic ---
   
@@ -265,11 +269,21 @@ const GoldCard: React.FC<GoldCardProps> = ({
         {/* FOOTER: Tags & Date */}
         <div className={`flex justify-between items-center mt-4 pt-3 border-t border-dashed ${isDarkTheme ? 'border-white/10' : 'border-black/5'}`}>
             <div className="flex items-center text-xs space-x-2 overflow-hidden">
-                {item.tags.length > 0 ? item.tags.slice(0, 3).map((tag) => (
+                {/* Smart Recognition Badge - show first detected type */}
+                {smartItems.length > 0 && smartItems[0] && (
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide flex items-center`} 
+                        style={{ backgroundColor: `${accentColor}20`, color: accentColor }}>
+                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                    </svg>
+                    {smartItems[0].type}
+                  </span>
+                )}
+                {item.tags.length > 0 ? item.tags.slice(0, smartItems.length > 0 ? 2 : 3).map((tag) => (
                     <span key={tag} className={`px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide ${tagColor} ${isDarkTheme ? 'bg-white/5' : 'bg-gray-100'}`}>
                         {tag}
                     </span>
-                )) : <span className="text-[10px] opacity-30 italic">No tags</span>}
+                )) : !smartItems.length && <span className="text-[10px] opacity-30 italic">No tags</span>}
             </div>
             <span className={`text-[10px] font-medium tracking-wide ${tagColor} whitespace-nowrap ml-4 opacity-70`}>{item.timestamp}</span>
         </div>
