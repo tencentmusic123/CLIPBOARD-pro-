@@ -28,36 +28,92 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [themeMode, setThemeMode] = useState<'DARK' | 'LIGHT' | 'SYSTEM'>('DARK');
-  const [accentColor, setAccentColor] = useState('#D4AF37'); // Default Gold
-  const [readingFontSize, setReadingFontSize] = useState(16);
+  const [themeMode, setThemeModeState] = useState<'DARK' | 'LIGHT' | 'SYSTEM'>('DARK');
+  const [accentColor, setAccentColorState] = useState('#D4AF37'); // Default Gold
+  const [readingFontSize, setReadingFontSizeState] = useState(16);
   
   const [isSmartRecognitionOn, setIsSmartRecognitionOn] = useState(true);
   const [isAiSupportOn, setIsAiSupportOn] = useState(true);
   
   const [clipboardSyncEnabled, setClipboardSyncEnabledState] = useState(false);
 
-  const [autoBackupFrequency, setAutoBackupFrequency] = useState('Off');
-  const [backupDestination, setBackupDestination] = useState('Google');
+  const [autoBackupFrequency, setAutoBackupFrequencyState] = useState('Off');
+  const [backupDestination, setBackupDestinationState] = useState('Google');
 
-  // Load Persistence
+  // Load all persisted settings on mount
   useEffect(() => {
+    const storedTheme = localStorage.getItem('theme_mode');
+    if (storedTheme) setThemeModeState(storedTheme as 'DARK' | 'LIGHT' | 'SYSTEM');
+    
+    const storedAccent = localStorage.getItem('accent_color');
+    if (storedAccent) setAccentColorState(storedAccent);
+    
+    const storedFontSize = localStorage.getItem('reading_font_size');
+    if (storedFontSize) setReadingFontSizeState(Number(storedFontSize));
+    
+    const storedSmartRecognition = localStorage.getItem('smart_recognition_enabled');
+    if (storedSmartRecognition) setIsSmartRecognitionOn(JSON.parse(storedSmartRecognition));
+    
+    const storedAiSupport = localStorage.getItem('ai_support_enabled');
+    if (storedAiSupport) setIsAiSupportOn(JSON.parse(storedAiSupport));
+    
     const storedSync = localStorage.getItem('clipboard_sync_enabled');
-    if (storedSync) {
-        setClipboardSyncEnabledState(JSON.parse(storedSync));
-    }
+    if (storedSync) setClipboardSyncEnabledState(JSON.parse(storedSync));
+    
+    const storedBackupFreq = localStorage.getItem('auto_backup_frequency');
+    if (storedBackupFreq) setAutoBackupFrequencyState(storedBackupFreq);
+    
+    const storedBackupDest = localStorage.getItem('backup_destination');
+    if (storedBackupDest) setBackupDestinationState(storedBackupDest);
   }, []);
 
   const setClipboardSyncEnabled = (enabled: boolean) => {
       setClipboardSyncEnabledState(enabled);
       localStorage.setItem('clipboard_sync_enabled', JSON.stringify(enabled));
   };
+  
+  const toggleTheme = (mode: 'DARK' | 'LIGHT' | 'SYSTEM') => {
+      setThemeModeState(mode);
+      localStorage.setItem('theme_mode', mode);
+  };
+  
+  const setAccentColor = (color: string) => {
+      setAccentColorState(color);
+      localStorage.setItem('accent_color', color);
+  };
+  
+  const setReadingFontSize = (size: number) => {
+      setReadingFontSizeState(size);
+      localStorage.setItem('reading_font_size', String(size));
+  };
+  
+  const toggleSmartRecognition = () => {
+      setIsSmartRecognitionOn(prev => {
+          const newValue = !prev;
+          localStorage.setItem('smart_recognition_enabled', JSON.stringify(newValue));
+          return newValue;
+      });
+  };
+  
+  const toggleAiSupport = () => {
+      setIsAiSupportOn(prev => {
+          const newValue = !prev;
+          localStorage.setItem('ai_support_enabled', JSON.stringify(newValue));
+          return newValue;
+      });
+  };
+  
+  const setAutoBackupFrequency = (freq: string) => {
+      setAutoBackupFrequencyState(freq);
+      localStorage.setItem('auto_backup_frequency', freq);
+  };
+  
+  const setBackupDestination = (dest: string) => {
+      setBackupDestinationState(dest);
+      localStorage.setItem('backup_destination', dest);
+  };
 
   const isDarkTheme = themeMode === 'DARK' || (themeMode === 'SYSTEM' && true); // Mock system dark
-
-  const toggleTheme = (mode: 'DARK' | 'LIGHT' | 'SYSTEM') => setThemeMode(mode);
-  const toggleSmartRecognition = () => setIsSmartRecognitionOn(prev => !prev);
-  const toggleAiSupport = () => setIsAiSupportOn(prev => !prev);
 
   return (
     <SettingsContext.Provider value={{

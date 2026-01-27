@@ -21,6 +21,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isAiMenuOpen, setIsAiMenuOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [hasContent, setHasContent] = useState(false);
   
   // Editor State for UI toggles
   const [isBoldActive, setIsBoldActive] = useState(false);
@@ -48,6 +49,9 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
         } else {
             editorRef.current.innerText = item.content;
         }
+        
+        // Set initial content state
+        setHasContent(!!(item.content || item.htmlContent));
 
         // Initialize History
         historyStack.current = [editorRef.current.innerHTML];
@@ -84,6 +88,9 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
    * save every single character, but save when the user pauses.
    */
   const handleInput = () => {
+      // Update placeholder visibility
+      setHasContent(!!(editorRef.current?.innerText?.trim()));
+      
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       
       debounceTimer.current = setTimeout(() => {
@@ -357,7 +364,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                 className={`w-full flex-1 p-6 focus:outline-none leading-relaxed whitespace-pre-wrap pb-48 ${isDarkTheme ? 'bg-black text-zinc-100' : 'bg-[#F2F2F7] text-gray-900'}`}
                 style={{ fontSize: `${fontSize}px` }}
             />
-            {!editorRef.current?.innerText && (
+            {!hasContent && (
                 <div className="absolute top-6 left-6 text-zinc-600 pointer-events-none text-base pl-4 md:pl-0">Type here...</div>
             )}
         </div>

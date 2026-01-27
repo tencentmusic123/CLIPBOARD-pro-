@@ -14,6 +14,7 @@ import { ScreenName, ClipboardItem, ClipboardType } from './types';
 import { clipboardRepository } from './data/repository/ClipboardRepository';
 import { Clipboard } from '@capacitor/clipboard';
 import { App as CapApp } from '@capacitor/app';
+import { detectSmartItems } from './util/SmartRecognition';
 
 // App Content Component to use Context
 const AppContent: React.FC = () => {
@@ -43,19 +44,47 @@ const AppContent: React.FC = () => {
            const latestItems = await clipboardRepository.getAllItems('DATE', 'DESC');
            const latest = latestItems.find(i => i.category === 'clipboard' && !i.isDeleted);
            
-           if (!latest || latest.content !== text) {
-               await clipboardRepository.addItem({
-                   id: Date.now().toString(),
-                   content: text,
-                   type: ClipboardType.TEXT,
-                   category: 'clipboard',
-                   timestamp: new Date().toLocaleString(),
-                   tags: ['#synced'],
-                   isPinned: false,
-                   isFavorite: false,
-                   isDeleted: false
-               });
+           // Don't sync if content matches latest
+           if (latest && latest.content === text) return;
+           
+           // Check if content is in trash folder - prevent syncing deleted items
+           const trashedItems = latestItems.filter(i => i.isDeleted);
+           if (trashedItems.some(i => i.content === text)) return;
+           
+           // Auto-detect type using smart recognition
+           let detectedType = ClipboardType.TEXT;
+           const smartItems = detectSmartItems(text);
+           if (smartItems.length > 0) {
+             const firstDetectedType = smartItems[0].type;
+             switch (firstDetectedType) {
+               case 'PHONE':
+                 detectedType = ClipboardType.PHONE;
+                 break;
+               case 'EMAIL':
+                 detectedType = ClipboardType.TEXT;
+                 break;
+               case 'LINK':
+                 detectedType = ClipboardType.LINK;
+                 break;
+               case 'LOCATION':
+                 detectedType = ClipboardType.LOCATION;
+                 break;
+               default:
+                 detectedType = ClipboardType.TEXT;
+             }
            }
+           
+           await clipboardRepository.addItem({
+               id: Date.now().toString(),
+               content: text,
+               type: detectedType,
+               category: 'clipboard',
+               timestamp: new Date().toLocaleString(),
+               tags: ['#synced'],
+               isPinned: false,
+               isFavorite: false,
+               isDeleted: false
+           });
         }
       } catch (e) {
         // Silently fail if permission denied or no focus (normal behavior for web apps without user gesture)
@@ -90,7 +119,7 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentScreen('HOME');
-    }, 2500);
+    }, 1200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -174,7 +203,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-black' : 'bg-[#F2F2F7]'}`}>
+    <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-zinc-950' : 'bg-gray-50'}`}>
       <div key={currentScreen} className="w-full h-full animate-fade-in">
           {renderScreen()}
       </div>
