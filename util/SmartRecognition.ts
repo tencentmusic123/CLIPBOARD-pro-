@@ -100,19 +100,20 @@ export const detectClipboardType = (text: string): ClipboardType => {
 
   // Check for phone numbers
   const phoneRegex = /^[\+]?[(]?[0-9]{1,3}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/;
-  if (phoneRegex.test(trimmed.replace(/\s/g, ''))) {
+  const normalizedText = trimmed.replace(/[\s\-\.\(\)]/g, ''); // Remove separators for testing
+  if (phoneRegex.test(trimmed) || (normalizedText.length >= 10 && /^\+?\d{10,15}$/.test(normalizedText))) {
     return ClipboardType.PHONE;
   }
 
-  // Check for location keywords
-  if (trimmed.includes('Street') || trimmed.includes('Avenue') || trimmed.includes('Road') || 
-      trimmed.includes('Boulevard') || trimmed.includes('Lane') || trimmed.includes('Drive')) {
+  // Check for location keywords (case-insensitive) and sensitive keywords for secure type
+  const lowerText = trimmed.toLowerCase();
+  const locationKeywords = ['street', 'avenue', 'road', 'boulevard', 'lane', 'drive', 'place', 'court', 'terrace', 'way'];
+  if (locationKeywords.some(keyword => lowerText.includes(keyword))) {
     return ClipboardType.LOCATION;
   }
 
   // Check if content contains sensitive keywords (passwords, keys, tokens)
   const secureKeywords = ['password', 'token', 'api_key', 'secret', 'private_key', 'auth'];
-  const lowerText = trimmed.toLowerCase();
   if (secureKeywords.some(keyword => lowerText.includes(keyword))) {
     return ClipboardType.SECURE;
   }
