@@ -28,8 +28,12 @@ coverage
 
 # Capacitor
 android/
+!android/app/src/main/res/
 ios/
 .capacitor/
 
 # Keep configuration
 !capacitor.config.ts
+
+# Helper scripts
+generate-icons.js
