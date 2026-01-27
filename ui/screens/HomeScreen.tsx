@@ -7,6 +7,7 @@ import { ClipboardItem, ScreenName, ClipboardType, SortOption, SortDirection } f
 import { useSettings } from '../context/SettingsContext';
 import JSZip from 'jszip';
 import { Clipboard } from '@capacitor/clipboard';
+import { detectSmartItems } from '../../util/SmartRecognition';
 
 interface HomeScreenProps {
     onNavigate: (screen: ScreenName) => void;
@@ -108,22 +109,50 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       const latestItems = await clipboardRepository.getAllItems('DATE', 'DESC');
       const latest = latestItems.find(i => i.category === 'clipboard' && !i.isDeleted);
 
-      if (!latest || latest.content !== text) {
-        const newItem: ClipboardItem = {
-           id: Date.now().toString(),
-           content: text,
-           type: ClipboardType.TEXT, // Could add logic to detect LINK/PHONE
-           category: 'clipboard',
-           timestamp: new Date().toLocaleString(),
-           tags: ['#synced'],
-           isPinned: false,
-           isFavorite: false,
-           isDeleted: false
-        };
-        await clipboardRepository.addItem(newItem);
-        await fetchData();
-        showToast("Synced from Clipboard");
+      // Don't sync if content matches latest or if it's in trash
+      if (latest && latest.content === text) return;
+      
+      // Check if content is in trash folder - prevent syncing deleted items
+      const trashedItems = latestItems.filter(i => i.isDeleted);
+      if (trashedItems.some(i => i.content === text)) return;
+
+      // Auto-detect type using smart recognition
+      let detectedType = ClipboardType.TEXT;
+      const smartItems = detectSmartItems(text);
+      if (smartItems.length > 0) {
+        const firstDetectedType = smartItems[0].type;
+        switch (firstDetectedType) {
+          case 'PHONE':
+            detectedType = ClipboardType.PHONE;
+            break;
+          case 'EMAIL':
+            detectedType = ClipboardType.TEXT; // EMAIL not in ClipboardType enum
+            break;
+          case 'LINK':
+            detectedType = ClipboardType.LINK;
+            break;
+          case 'LOCATION':
+            detectedType = ClipboardType.LOCATION;
+            break;
+          default:
+            detectedType = ClipboardType.TEXT;
+        }
       }
+
+      const newItem: ClipboardItem = {
+         id: Date.now().toString(),
+         content: text,
+         type: detectedType,
+         category: 'clipboard',
+         timestamp: new Date().toLocaleString(),
+         tags: ['#synced'],
+         isPinned: false,
+         isFavorite: false,
+         isDeleted: false
+      };
+      await clipboardRepository.addItem(newItem);
+      await fetchData();
+      showToast("Synced from Clipboard");
     } catch (err) {
       console.warn("Manual sync failed: " + (err instanceof Error ? err.message : String(err)));
     }
