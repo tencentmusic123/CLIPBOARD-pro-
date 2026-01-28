@@ -137,19 +137,18 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
       fetchFavorites();
   };
 
-  const handleShare = () => {
-    const handleShare = async () => {
-      const textToShare = filteredItems
-        .filter(i => selectedIds.has(i.id))
-        .map(i => i.content).join('\n\n');
-        
-      if (navigator.share) {
-          navigator.share({ title: 'Shared Clips', text: textToShare });
-      } else {
-          await Clipboard.write({ string: textToShare });
-          alert("Copied to clipboard for sharing");
-      }
-      exitSelectionMode();
+  const handleShare = async () => {
+    const textToShare = filteredItems
+      .filter(i => selectedIds.has(i.id))
+      .map(i => i.content).join('\n\n');
+      
+    if (navigator.share) {
+        navigator.share({ title: 'Shared Clips', text: textToShare });
+    } else {
+        await Clipboard.write({ string: textToShare });
+        alert("Copied to clipboard for sharing");
+    }
+    exitSelectionMode();
   };
 
   const handleExport = async () => {
@@ -332,6 +331,7 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
                 <div className="grid grid-cols-3 gap-y-4 gap-x-2 mb-6 border-b pb-4" style={{ borderColor: isDarkTheme ? '#333' : '#eee' }}>
                     <FilterItem label="All" active={filter.type === 'ALL'} onClick={() => setFilter(f => ({...f, type: 'ALL'}))} underline accentColor={accentColor} textColor={textColor} />
                     <FilterItem label="Phone" active={filter.type === ClipboardType.PHONE} onClick={() => setFilter(f => ({...f, type: ClipboardType.PHONE}))} accentColor={accentColor} textColor={textColor} />
+                    <FilterItem label="Email" active={filter.type === ClipboardType.EMAIL} onClick={() => setFilter(f => ({...f, type: ClipboardType.EMAIL}))} accentColor={accentColor} textColor={textColor} />
                     <FilterItem label="Link" active={filter.type === ClipboardType.LINK} onClick={() => setFilter(f => ({...f, type: ClipboardType.LINK}))} accentColor={accentColor} textColor={textColor} />
                     <FilterItem label="Location" active={filter.type === ClipboardType.LOCATION} onClick={() => setFilter(f => ({...f, type: ClipboardType.LOCATION}))} accentColor={accentColor} textColor={textColor} />
                     <FilterItem label="Secure" active={filter.type === ClipboardType.SECURE} onClick={() => setFilter(f => ({...f, type: ClipboardType.SECURE}))} accentColor={accentColor} textColor={textColor} />

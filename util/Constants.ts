@@ -56,6 +56,17 @@ export const INITIAL_CLIPBOARD_DATA: ClipboardItem[] = [
     isDeleted: false,
   },
   {
+    id: '4b',
+    content: 'contact@example.com',
+    type: ClipboardType.EMAIL,
+    category: 'clipboard',
+    timestamp: '10:41 PM • 23 Dec',
+    tags: ['#work'],
+    isPinned: false,
+    isFavorite: false,
+    isDeleted: false,
+  },
+  {
     id: '5',
     content: '33rd Street, Fifth Avenue, New York City, New York, United States',
     type: ClipboardType.LOCATION,

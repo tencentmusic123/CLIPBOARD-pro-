@@ -126,7 +126,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
             detectedType = ClipboardType.PHONE;
             break;
           case 'EMAIL':
-            detectedType = ClipboardType.TEXT; // EMAIL not in ClipboardType enum
+            detectedType = ClipboardType.EMAIL;
             break;
           case 'LINK':
             detectedType = ClipboardType.LINK;
@@ -552,11 +552,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
   // --- RENDER HELPERS ---
   const textColor = isDarkTheme ? 'text-white' : 'text-gray-900';
   const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-gray-200';
-  const headerBg = isDarkTheme ? 'bg-gradient-to-b from-zinc-950 to-zinc-900 border-zinc-800' : 'bg-gradient-to-b from-blue-600 to-blue-700 border-blue-800';
+  const headerBg = isDarkTheme ? 'bg-gradient-to-b from-amber-900/40 via-zinc-900/60 to-zinc-950 border-amber-600/50' : 'bg-gradient-to-b from-amber-500/30 via-amber-400/20 to-amber-300/10 border-amber-400/40';
 
   return (
     <div 
-        className={`relative flex flex-col h-full ${isDarkTheme ? 'bg-zinc-950 text-white' : 'bg-gray-50 text-gray-900'}`} 
+        className={`relative flex flex-col h-full ${isDarkTheme ? 'bg-zinc-900 text-white' : 'bg-blue-50 text-gray-900'}`} 
         onClick={handleGlobalClick}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -566,7 +566,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       <SideBar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onNavigate={onNavigate} />
 
       {/* --- HEADER --- */}
-      <header className={`px-4 z-30 flex items-center h-24 transition-all duration-300 sticky top-0 backdrop-blur-xl border-b ${headerBg} shadow-lg`}>
+      <header className={`px-4 z-30 flex items-center h-36 transition-all duration-300 sticky top-0 backdrop-blur-xl border-b ${headerBg} shadow-2xl`}>
         <div className="max-w-5xl mx-auto w-full flex items-center h-full animate-fade-in-down">
             {isSelectionMode ? (
                 <SelectionHeader 
@@ -667,6 +667,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
                         <FilterChip label="Text" active={filter.type === ClipboardType.TEXT} onClick={() => setFilter(f => ({...f, type: ClipboardType.TEXT}))} accentColor={accentColor} textColor={textColor} />
                         <FilterChip label="Link" active={filter.type === ClipboardType.LINK} onClick={() => setFilter(f => ({...f, type: ClipboardType.LINK}))} accentColor={accentColor} textColor={textColor} />
                         <FilterChip label="Phone" active={filter.type === ClipboardType.PHONE} onClick={() => setFilter(f => ({...f, type: ClipboardType.PHONE}))} accentColor={accentColor} textColor={textColor} />
+                        <FilterChip label="Email" active={filter.type === ClipboardType.EMAIL} onClick={() => setFilter(f => ({...f, type: ClipboardType.EMAIL}))} accentColor={accentColor} textColor={textColor} />
                         <FilterChip label="Location" active={filter.type === ClipboardType.LOCATION} onClick={() => setFilter(f => ({...f, type: ClipboardType.LOCATION}))} accentColor={accentColor} textColor={textColor} />
                         <FilterChip label="Secure" active={filter.type === ClipboardType.SECURE} onClick={() => setFilter(f => ({...f, type: ClipboardType.SECURE}))} accentColor={accentColor} textColor={textColor} />
                     </div>
@@ -719,7 +720,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
               ) : displayItems.length === 0 ? (
                  <div className="flex flex-col items-center justify-center mt-32 opacity-40">
                      <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                     <span className="font-light tracking-wide text-lg">{activeTab === 'clipboard' ? 'No clips' : 'No notes'}</span>
+                     <span className="font-light tracking-wide text-lg">{activeTab === 'clipboard' ? 'No clips' : 'No notes'} in selected filter</span>
                  </div>
               ) : (
                 displayItems.map((item, index) => (
@@ -987,7 +988,7 @@ const DefaultHeader = ({ accentColor, textColor, isSortMenuOpen, isFilterOpen, o
             <button onClick={onMenuOpen} className="p-1 hover:opacity-70 transition-opacity" style={{ color: buttonColor }}>
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10" /></svg>
             </button>
-            <h2 className="text-xl font-bold tracking-widest uppercase" style={{ color: isDarkTheme ? accentColor : 'white' }}>CLIPBOARD MAX</h2>
+            <h2 className="text-3xl font-bold tracking-widest uppercase" style={{ color: isDarkTheme ? accentColor : 'white' }}>CLIPBOARD MAX</h2>
         </div>
         <div className="flex items-center space-x-2">
             <button onClick={onSearchOpen} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: buttonColor }}>

@@ -1,5 +1,6 @@
 import { ClipboardItem, ClipboardType, SortOption, SortDirection } from '../../types';
 import { INITIAL_CLIPBOARD_DATA } from '../../util/Constants';
+import { detectSmartItems } from '../../util/SmartRecognition';
 
 const STORAGE_KEY = 'clipboard_max_data';
 const TAGS_KEY = 'clipboard_max_tags';
@@ -129,6 +130,18 @@ class ClipboardRepository {
   }
 
   async addItem(item: ClipboardItem): Promise<void> {
+    // Check for duplicate content in the same category (excluding deleted items)
+    const duplicate = this.items.find(
+      i => !i.isDeleted && 
+           i.category === item.category && 
+           i.content === item.content
+    );
+    
+    // If duplicate exists, don't add - just return silently
+    if (duplicate) {
+      return;
+    }
+    
     this.items = [item, ...this.items];
     item.tags.forEach(t => this.knownTags.add(t));
     this.saveToStorage();

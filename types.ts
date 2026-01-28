@@ -3,7 +3,8 @@ export enum ClipboardType {
   SECURE = 'SECURE',
   LINK = 'LINK',
   PHONE = 'PHONE',
-  LOCATION = 'LOCATION'
+  LOCATION = 'LOCATION',
+  EMAIL = 'EMAIL'
 }
 
 export interface ClipboardItem {

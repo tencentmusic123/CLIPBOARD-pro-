@@ -46,12 +46,31 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
   }, [currentItem, isSmartRecognitionOn]);
 
   const handleSmartAction = (smartItem: SmartItem) => {
+      let url = '';
       switch(smartItem.type) {
-          case 'PHONE': window.open(`tel:${smartItem.value}`); break;
-          case 'EMAIL': window.open(`mailto:${smartItem.value}`); break;
-          case 'LINK': window.open(smartItem.value, '_blank'); break;
-          case 'LOCATION': window.open(`https://maps.google.com/?q=${encodeURIComponent(smartItem.value)}`, '_blank'); break;
+          case 'PHONE': 
+              url = `tel:${smartItem.value}`;
+              break;
+          case 'EMAIL': 
+              url = `mailto:${smartItem.value}`;
+              break;
+          case 'LINK': 
+              url = smartItem.value;
+              break;
+          case 'LOCATION': 
+              url = `https://maps.google.com/?q=${encodeURIComponent(smartItem.value)}`;
+              break;
       }
+      
+      if (url) {
+          // For mobile, use location.href which works better with native handlers
+          if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+              window.location.href = url;
+          } else {
+              window.open(url, '_blank');
+          }
+      }
+      
       setIsSmartMenuOpen(false);
   };
 

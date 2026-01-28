@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ClipboardItem } from '../../types';
+import { ClipboardItem, ClipboardType } from '../../types';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { useSettings } from '../context/SettingsContext';
 import { removeDuplicates, cleanupFormat, convertToList, fixGrammar, changeCase } from '../../util/AITextProcessor';
 import { Clipboard } from '@capacitor/clipboard';
+import { detectSmartItems } from '../../util/SmartRecognition';
 
 interface EditScreenProps {
   item: ClipboardItem;
@@ -244,6 +245,29 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
       const category = destination === 'CLIPBOARD' ? 'clipboard' : 'notes';
       const timestamp = new Date().toLocaleString();
       
+      // Auto-detect type using smart recognition
+      let detectedType = item.type || ClipboardType.TEXT;
+      const smartItems = detectSmartItems(content);
+      if (smartItems.length > 0) {
+        const firstType = smartItems[0].type;
+        switch (firstType) {
+          case 'PHONE':
+            detectedType = ClipboardType.PHONE;
+            break;
+          case 'EMAIL':
+            detectedType = ClipboardType.EMAIL;
+            break;
+          case 'LINK':
+            detectedType = ClipboardType.LINK;
+            break;
+          case 'LOCATION':
+            detectedType = ClipboardType.LOCATION;
+            break;
+          default:
+            detectedType = item.type || ClipboardType.TEXT;
+        }
+      }
+      
       let finalItem: ClipboardItem;
 
       if (isNew) {
@@ -253,6 +277,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
              title,
              content,
              htmlContent,
+             type: detectedType,
              timestamp,
              category,
              tags: category === 'notes' ? ['#notes'] : []
@@ -264,6 +289,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
               title,
               content,
               htmlContent,
+              type: detectedType,
               timestamp,
               category: category
           };
@@ -271,6 +297,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
               title, 
               content, 
               htmlContent,
+              type: detectedType,
               timestamp,
               category: category
           });

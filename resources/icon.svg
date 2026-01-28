@@ -2,22 +2,29 @@
   <!-- Black background -->
   <rect width="1024" height="1024" fill="#000000"/>
   
-  <!-- Gold clipboard icon -->
+  <!-- Main Group -->
   <g transform="translate(512, 512)">
-    <!-- Clipboard board -->
-    <rect x="-200" y="-250" width="400" height="500" rx="20" fill="#D4AF37" stroke="#B4941F" stroke-width="8"/>
+    <!-- Clipboard body -->
+    <rect x="-180" y="-200" width="360" height="420" rx="30" fill="#ffffff" stroke="#D4AF37" stroke-width="12"/>
     
-    <!-- Clipboard clip top -->
-    <rect x="-100" y="-280" width="200" height="60" rx="10" fill="#B4941F"/>
-    <rect x="-80" y="-260" width="160" height="40" rx="8" fill="#000000"/>
+    <!-- Clipboard clip -->
+    <ellipse cx="0" cy="-200" rx="80" ry="35" fill="#D4AF37"/>
+    <rect x="-60" y="-180" width="120" height="50" rx="8" fill="#ffffff"/>
+    <circle cx="-40" cy="-155" r="8" fill="#D4AF37"/>
+    <circle cx="40" cy="-155" r="8" fill="#D4AF37"/>
     
-    <!-- Text lines on clipboard -->
-    <rect x="-150" y="-150" width="300" height="30" rx="5" fill="#000000" opacity="0.3"/>
-    <rect x="-150" y="-80" width="240" height="30" rx="5" fill="#000000" opacity="0.3"/>
-    <rect x="-150" y="-10" width="280" height="30" rx="5" fill="#000000" opacity="0.3"/>
-    <rect x="-150" y="60" width="200" height="30" rx="5" fill="#000000" opacity="0.3"/>
-    
-    <!-- MAX text at bottom -->
-    <text x="0" y="200" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#000000" text-anchor="middle">MAX</text>
+    <!-- Crown icon (top right) -->
+    <g transform="translate(150, -280)">
+      <!-- Crown base -->
+      <polygon points="0,-40 -50,20 -30,20 -50,50 0,50 50,50 30,20 50,20" fill="#D4AF37" stroke="#B8860B" stroke-width="2"/>
+      <!-- Crown points -->
+      <polygon points="-30,-30 -40,0 -20,-5" fill="#D4AF37"/>
+      <polygon points="0,-50 -10,0 10,0" fill="#D4AF37"/>
+      <polygon points="30,-30 20,-5 40,0" fill="#D4AF37"/>
+      <!-- Jewels on crown -->
+      <circle cx="-30" cy="-20" r="5" fill="#FF6B6B"/>
+      <circle cx="0" cy="-40" r="6" fill="#FF6B6B"/>
+      <circle cx="30" cy="-20" r="5" fill="#FF6B6B"/>
+    </g>
   </g>
 </svg>

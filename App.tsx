@@ -61,7 +61,7 @@ const AppContent: React.FC = () => {
                  detectedType = ClipboardType.PHONE;
                  break;
                case 'EMAIL':
-                 detectedType = ClipboardType.TEXT;
+                 detectedType = ClipboardType.EMAIL;
                  break;
                case 'LINK':
                  detectedType = ClipboardType.LINK;
@@ -119,7 +119,7 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentScreen('HOME');
-    }, 1200);
+    }, 600);
     return () => clearTimeout(timer);
   }, []);
 
