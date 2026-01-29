@@ -163,9 +163,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   // --- Styles & Classes ---
   // Updated: Changed min-h-screen to h-full to fit within animated container without breaking overflow
   const containerClass = `h-full flex flex-col font-sans animate-fade-in ${isDarkTheme ? 'bg-black text-white' : 'bg-[#F2F2F7] text-black'}`;
-  const headerClass = `px-6 py-5 flex items-center justify-center sticky top-0 z-20 border-b relative ${isDarkTheme ? 'bg-black/95 border-zinc-800' : 'bg-white/95 border-gray-200'}`;
+  const headerClass = `px-6 py-5 flex items-center justify-center sticky top-0 z-20 border-b relative ${isDarkTheme ? 'bg-black/95 border-zinc-800' : 'bg-white/95 border-zinc-400'}`;
   const sectionTitleClass = `text-xs font-bold tracking-[0.15em] uppercase mb-3 mt-8 px-4 opacity-50`;
-  const cardClass = `mx-4 rounded-2xl border ${isDarkTheme ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-sm'}`;
+  const cardClass = `mx-4 rounded-2xl border ${isDarkTheme ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-400 shadow-sm'}`;
   const itemClass = `flex items-center justify-between p-4 transition-colors ${isDarkTheme ? 'hover:bg-zinc-800/50' : 'hover:bg-gray-50'}`;
   const dividerClass = `h-[1px] w-full ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-100'}`;
 
@@ -307,7 +307,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                            </button>
                            {/* Frequency Dropdown */}
                            {showBackupFreq && (
-                                <div className={`absolute top-full right-0 mt-2 z-30 w-40 rounded-xl shadow-xl border overflow-hidden ${isDarkTheme ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+                                <div className={`absolute top-full right-0 mt-2 z-30 w-40 rounded-xl shadow-xl border overflow-hidden ${isDarkTheme ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-400'}`}>
                                     {['Off', 'Every Day', 'Every 15 days', 'Every Month'].map(opt => (
                                         <button 
                                             key={opt}
@@ -331,7 +331,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                             </button>
                              {/* Destination Dropdown */}
                            {showBackupDest && (
-                                <div className={`absolute top-full right-0 mt-2 z-30 w-48 rounded-xl shadow-xl border overflow-hidden ${isDarkTheme ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+                                <div className={`absolute top-full right-0 mt-2 z-30 w-48 rounded-xl shadow-xl border overflow-hidden ${isDarkTheme ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-400'}`}>
                                      <button onClick={(e) => { e.stopPropagation(); handleBackupDestinationSelect('Google'); }} className={`w-full text-left px-4 py-3 text-sm hover:opacity-80 flex flex-col ${isDarkTheme ? 'text-white hover:bg-zinc-800' : 'text-black hover:bg-gray-100'}`}>
                                          <span>Google Drive</span>
                                          {isAuthenticated && backupDestination === 'Google' && <span className="text-[10px] opacity-50">{user?.email}</span>}
@@ -395,7 +395,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       {actionModalType && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
               <div 
-                  className={`border rounded-2xl p-6 w-full max-w-sm shadow-2xl flex flex-col ${isDarkTheme ? 'bg-black border-zinc-700 text-white' : 'bg-white border-gray-300 text-black'}`}
+                  className={`border rounded-2xl p-6 w-full max-w-sm shadow-2xl flex flex-col ${isDarkTheme ? 'bg-black border-zinc-700 text-white' : 'bg-white border-zinc-400 text-black'}`}
                   style={{ borderColor: accentColor }}
               >
                   <h3 className="text-xl text-center mb-6 font-medium tracking-wide">
@@ -405,14 +405,14 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                   <div className="space-y-3">
                       <button 
                           onClick={() => handleDestinationConfirm('Google')}
-                          className={`w-full flex items-center p-4 rounded-xl border transition-all relative overflow-hidden group ${isDarkTheme ? 'hover:bg-zinc-900 border-zinc-800' : 'hover:bg-gray-50 border-gray-200'}`}
+                          className={`w-full flex items-center p-4 rounded-xl border transition-all relative overflow-hidden group ${isDarkTheme ? 'hover:bg-zinc-900 border-zinc-800' : 'hover:bg-gray-50 border-zinc-400'}`}
                       >
                           <svg className="w-6 h-6 mr-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 0.507 5.387 0 12s5.36 12 12.48 12c3.6 0 6.347-1.173 8.4-3.253 2.187-2.187 2.867-5.333 2.867-8.133 0-.8-.08-1.453-.173-2.08H12.48z"/>
                           </svg>
                           <div className="text-left flex-1">
                               <div className="font-medium text-base">Google Drive</div>
-                              <div className={`text-xs ${isDarkTheme ? 'text-zinc-400' : 'text-gray-500'}`}>
+                              <div className={`text-xs ${isDarkTheme ? 'text-zinc-400' : 'text-zinc-600'}`}>
                                   {isAuthenticated ? `As ${user?.email}` : 'Sign in required'}
                               </div>
                           </div>
@@ -420,19 +420,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
                       <button 
                           onClick={() => handleDestinationConfirm('Local')}
-                          className={`w-full flex items-center p-4 rounded-xl border transition-all ${isDarkTheme ? 'hover:bg-zinc-900 border-zinc-800' : 'hover:bg-gray-50 border-gray-200'}`}
+                          className={`w-full flex items-center p-4 rounded-xl border transition-all ${isDarkTheme ? 'hover:bg-zinc-900 border-zinc-800' : 'hover:bg-gray-50 border-zinc-400'}`}
                       >
                            <svg className="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
                           <div className="text-left">
                               <div className="font-medium text-base">Local Storage</div>
-                              <div className={`text-xs ${isDarkTheme ? 'text-zinc-400' : 'text-gray-500'}`}>Device Internal Storage</div>
+                              <div className={`text-xs ${isDarkTheme ? 'text-zinc-400' : 'text-zinc-600'}`}>Device Internal Storage</div>
                           </div>
                       </button>
                   </div>
 
                   <button 
                       onClick={() => setActionModalType(null)}
-                      className={`mt-6 w-full py-3 text-center text-sm uppercase tracking-wider font-medium hover:opacity-100 transition-opacity ${isDarkTheme ? 'text-zinc-500 hover:text-white' : 'text-gray-500 hover:text-black'}`}
+                      className={`mt-6 w-full py-3 text-center text-sm uppercase tracking-wider font-medium hover:opacity-100 transition-opacity ${isDarkTheme ? 'text-zinc-500 hover:text-white' : 'text-zinc-600 hover:text-black'}`}
                   >
                       Cancel
                   </button>
@@ -443,7 +443,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       {/* --- FEEDBACK MODAL --- */}
       {showFeedbackModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-              <div className={`border rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+              <div className={`border rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-zinc-400'}`} style={{ borderColor: accentColor }}>
                   <div className={`p-4 border-b flex justify-between items-center ${isDarkTheme ? 'border-zinc-800 bg-zinc-900' : 'border-gray-100 bg-gray-50'}`}>
                       <h3 className="font-semibold tracking-wide" style={{ color: accentColor }}>Send Feedback</h3>
                       <button onClick={() => setShowFeedbackModal(false)}>
@@ -452,7 +452,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                   </div>
                   <div className="p-4">
                       <textarea
-                          className={`w-full h-32 p-3 border rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-offset-0 ${isDarkTheme ? 'bg-zinc-900 border-zinc-700 text-white focus:border-white' : 'bg-white border-gray-300 text-black focus:border-black'}`}
+                          className={`w-full h-32 p-3 border rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-offset-0 ${isDarkTheme ? 'bg-zinc-900 border-zinc-700 text-white focus:border-white' : 'bg-white border-zinc-400 text-black focus:border-black'}`}
                           placeholder="Tell us what you think..."
                           value={feedbackText}
                           onChange={(e) => setFeedbackText(e.target.value)}

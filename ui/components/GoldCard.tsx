@@ -190,8 +190,8 @@ const GoldCard: React.FC<GoldCardProps> = ({
   const hoverEffect = isSelectionMode ? '' : (isDarkTheme ? 'hover:bg-zinc-800 hover:scale-[1.01]' : 'hover:shadow-lg hover:-translate-y-[2px] hover:scale-[1.01]');
   const activeEffect = isSelectionMode ? '' : 'active:scale-95 active:shadow-inner';
   const textColor = isDarkTheme ? 'text-zinc-200' : 'text-gray-900';
-  const tagColor = isDarkTheme ? 'text-zinc-500' : 'text-gray-500';
-  const borderColor = isDarkTheme ? 'border-white/5' : 'border-gray-200/80';
+  const tagColor = isDarkTheme ? 'text-zinc-500' : 'text-zinc-600';
+  const borderColor = isDarkTheme ? 'border-white/5' : 'border-zinc-400/80';
 
   // Animation stagger
   const animationDelay = `${index * 50}ms`;

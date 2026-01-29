@@ -183,7 +183,7 @@ const TagsScreen: React.FC<TagsScreenProps> = ({ onBack, onSelectTag }) => {
           {!isSelectionMode && (
               <button 
                 onClick={() => { setNewTagInput(''); setShowAddOverlay(true); }}
-                className={`mt-8 border px-4 py-2 rounded-xl flex items-center transition-colors ${isDarkTheme ? 'border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600' : 'border-gray-300 text-gray-500 hover:text-black'}`}
+                className={`mt-8 border px-4 py-2 rounded-xl flex items-center transition-colors ${isDarkTheme ? 'border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600' : 'border-zinc-400 text-zinc-600 hover:text-black'}`}
                 style={{ borderColor: undefined }}
               >
                   <span className="mr-2 text-lg" style={{ color: accentColor }}>+</span> Add New Tag
@@ -201,7 +201,7 @@ const TagsScreen: React.FC<TagsScreenProps> = ({ onBack, onSelectTag }) => {
                   <span className="ml-4 text-xl tracking-wider" style={{ color: accentColor }}>Tags</span>
               </div>
               <div className="flex-1 flex flex-col justify-center px-8">
-                  <div className={`flex items-center text-3xl font-light border-b pb-2 ${isDarkTheme ? 'border-zinc-800' : 'border-gray-300'}`}>
+                  <div className={`flex items-center text-3xl font-light border-b pb-2 ${isDarkTheme ? 'border-zinc-800' : 'border-zinc-400'}`}>
                       <span className="mr-2" style={{ color: accentColor }}>#</span>
                       <input 
                         type="text" 
@@ -223,7 +223,7 @@ const TagsScreen: React.FC<TagsScreenProps> = ({ onBack, onSelectTag }) => {
       {/* --- REMOVE CONFIRM --- */}
       {showRemoveConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-              <div className={`border rounded-2xl p-6 w-full max-w-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+              <div className={`border rounded-2xl p-6 w-full max-w-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-zinc-400'}`} style={{ borderColor: accentColor }}>
                   <h3 className={`text-lg text-center font-normal mb-6 ${textColor}`}>
                       Remove selected tags from all items?
                   </h3>
@@ -238,7 +238,7 @@ const TagsScreen: React.FC<TagsScreenProps> = ({ onBack, onSelectTag }) => {
       {/* --- MERGE INPUT --- */}
       {showMergeInput && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-              <div className={`border rounded-2xl p-6 w-full max-w-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+              <div className={`border rounded-2xl p-6 w-full max-w-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-zinc-400'}`} style={{ borderColor: accentColor }}>
                   <h3 className="text-lg mb-4 text-center" style={{ color: accentColor }}>Merge Tags</h3>
                   <input 
                     type="text" 
@@ -246,7 +246,7 @@ const TagsScreen: React.FC<TagsScreenProps> = ({ onBack, onSelectTag }) => {
                     value={mergeNameInput}
                     onChange={(e) => setMergeNameInput(e.target.value)}
                     placeholder="New tag name (e.g. #Project)"
-                    className={`w-full border rounded-lg p-3 focus:outline-none mb-6 ${isDarkTheme ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-gray-50 border-gray-300 text-black'}`}
+                    className={`w-full border rounded-lg p-3 focus:outline-none mb-6 ${isDarkTheme ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-gray-50 border-zinc-400 text-black'}`}
                     style={{ borderColor: undefined }}
                   />
                   <div className="flex justify-between items-center px-2 text-lg">

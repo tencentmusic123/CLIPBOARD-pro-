@@ -203,7 +203,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-zinc-950' : 'bg-gray-50'}`}>
+    <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-zinc-950' : 'bg-[#D1E5F4]'}`}>
       <div key={currentScreen} className="w-full h-full animate-fade-in">
           {renderScreen()}
       </div>

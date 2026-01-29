@@ -28,12 +28,12 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose, onNavigate }) => {
   };
 
   // --- Theme Constants ---
-  const containerClass = isDarkTheme ? 'bg-black border-zinc-900' : 'bg-[#FAFAFA] border-gray-200';
+  const containerClass = isDarkTheme ? 'bg-black border-zinc-900' : 'bg-[#FAFAFA] border-zinc-400';
   const headerClass = isDarkTheme ? 'bg-zinc-900' : 'bg-white';
   const headerOverlayClass = isDarkTheme ? 'from-transparent via-black/50 to-black/90' : 'from-transparent via-white/50 to-white/90';
   const textPrimary = isDarkTheme ? 'text-white' : 'text-gray-900';
-  const textSecondary = isDarkTheme ? 'text-zinc-400' : 'text-gray-500';
-  const footerClass = isDarkTheme ? 'border-zinc-900 bg-black' : 'border-gray-200 bg-[#FAFAFA]';
+  const textSecondary = isDarkTheme ? 'text-zinc-400' : 'text-zinc-600';
+  const footerClass = isDarkTheme ? 'border-zinc-900 bg-black' : 'border-zinc-400 bg-[#FAFAFA]';
 
   return (
     <>
@@ -83,7 +83,7 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose, onNavigate }) => {
                 </div>
             ) : !user ? (
                 <button onClick={handleLoginClick} className="flex items-center space-x-4 w-full group py-2">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors border ${isDarkTheme ? 'bg-zinc-800 border-zinc-700 group-hover:bg-zinc-700' : 'bg-white border-gray-300 group-hover:bg-gray-50 shadow-sm'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors border ${isDarkTheme ? 'bg-zinc-800 border-zinc-700 group-hover:bg-zinc-700' : 'bg-white border-zinc-400 group-hover:bg-gray-50 shadow-sm'}`}>
                         <svg className={`w-5 h-5 ${textPrimary}`} fill="currentColor" viewBox="0 0 24 24">
                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3 0 1.66-1.34 3-3 3S9 9.66 9 8c0-1.66 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
                         </svg>

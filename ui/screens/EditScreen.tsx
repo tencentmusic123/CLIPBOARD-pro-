@@ -320,8 +320,8 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
   // --- Render Styles ---
   const bgColor = isDarkTheme ? 'bg-black' : 'bg-[#F2F2F7]';
   const textColor = isDarkTheme ? 'text-white' : 'text-black';
-  const headerBg = isDarkTheme ? 'bg-black/80 border-zinc-900' : 'bg-white/80 border-gray-200';
-  const toolbarBg = isDarkTheme ? 'bg-[#121212] border-zinc-800' : 'bg-white border-gray-200';
+  const headerBg = isDarkTheme ? 'bg-black/80 border-zinc-900' : 'bg-white/80 border-zinc-400';
+  const toolbarBg = isDarkTheme ? 'bg-[#121212] border-zinc-800' : 'bg-white border-zinc-400';
   const toolbarBtnClass = `w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-200`;
   
   const getBtnStyle = (isActive: boolean) => {
@@ -342,7 +342,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
       {/* --- HEADER --- */}
       <header className={`px-4 py-3 flex items-center justify-between border-b sticky top-0 z-30 backdrop-blur-xl ${headerBg}`}>
         <div className="flex items-center flex-1 max-w-4xl mx-auto w-full">
-            <button onClick={onBack} className={`mr-3 ${isDarkTheme ? 'text-zinc-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
+            <button onClick={onBack} className={`mr-3 ${isDarkTheme ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'}`}>
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -356,7 +356,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
             />
             
             <div className="flex items-center space-x-4 pl-4">
-                 <div className={`flex items-center space-x-3 ${isDarkTheme ? 'text-zinc-400' : 'text-gray-500'}`}>
+                 <div className={`flex items-center space-x-3 ${isDarkTheme ? 'text-zinc-400' : 'text-zinc-600'}`}>
                      <button 
                         onMouseDown={handleToolbarMouseDown}
                         onClick={performUndo} 
@@ -398,7 +398,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
 
         {/* Help Overlay */}
         {isHelpOpen && (
-            <div className={`absolute inset-x-4 top-4 bottom-4 border rounded-2xl p-6 z-40 overflow-y-auto backdrop-blur-md shadow-2xl animate-fade-in max-w-lg mx-auto ${isDarkTheme ? 'bg-[#121212]/95 border-gold/50' : 'bg-white/95 border-gray-300'}`} style={{ borderColor: isDarkTheme ? undefined : accentColor }}>
+            <div className={`absolute inset-x-4 top-4 bottom-4 border rounded-2xl p-6 z-40 overflow-y-auto backdrop-blur-md shadow-2xl animate-fade-in max-w-lg mx-auto ${isDarkTheme ? 'bg-[#121212]/95 border-gold/50' : 'bg-white/95 border-zinc-400'}`} style={{ borderColor: isDarkTheme ? undefined : accentColor }}>
                  <h3 className="text-lg font-bold mb-4" style={{ color: accentColor }}>AI Tools Guide</h3>
                  <ul className={`space-y-4 text-sm leading-relaxed font-light ${isDarkTheme ? 'text-zinc-300' : 'text-gray-700'}`}>
                     <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Remove Duplicates:</strong> Finds and deletes any repeated lines to make lists shorter.</li>
@@ -422,7 +422,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                        {isHelpOpen ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg> : <span className="font-serif font-bold text-lg">?</span>}
                    </button>
                </div>
-               <div className={`border rounded-xl p-2 grid grid-cols-2 gap-2 shadow-2xl ${isDarkTheme ? 'bg-[#0A0A0A] border-zinc-800' : 'bg-white border-gray-200'}`}>
+               <div className={`border rounded-xl p-2 grid grid-cols-2 gap-2 shadow-2xl ${isDarkTheme ? 'bg-[#0A0A0A] border-zinc-800' : 'bg-white border-zinc-400'}`}>
                    <AiButton label="Remove Duplicates" onClick={() => handleAiAction('DUPLICATES')} isDark={isDarkTheme} accentColor={accentColor} />
                    <AiButton label="Clean Up" onClick={() => handleAiAction('CLEANUP')} isDark={isDarkTheme} accentColor={accentColor} />
                    <AiButton label="Make List" onClick={() => handleAiAction('LIST')} isDark={isDarkTheme} accentColor={accentColor} />
@@ -498,12 +498,12 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
       {/* --- SAVE DIALOG --- */}
       {showSaveDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-              <div className={`border rounded-xl w-full max-w-sm overflow-hidden shadow-2xl ${isDarkTheme ? 'bg-[#121212] border-zinc-700' : 'bg-white border-gray-300'}`}>
-                  <div className={`p-6 text-center border-b ${isDarkTheme ? 'border-zinc-800 text-white' : 'border-gray-200 text-black'}`}>
+              <div className={`border rounded-xl w-full max-w-sm overflow-hidden shadow-2xl ${isDarkTheme ? 'bg-[#121212] border-zinc-700' : 'bg-white border-zinc-400'}`}>
+                  <div className={`p-6 text-center border-b ${isDarkTheme ? 'border-zinc-800 text-white' : 'border-zinc-400 text-black'}`}>
                       <h3 className="text-xl font-light">Save to :</h3>
                   </div>
                   <div className="flex items-center">
-                      <button onClick={() => performSave('CLIPBOARD')} className={`flex-1 py-4 text-center border-r text-lg font-light ${isDarkTheme ? 'text-zinc-300 hover:bg-zinc-800 border-zinc-800' : 'text-gray-700 hover:bg-gray-100 border-gray-200'}`}>Clipboard</button>
+                      <button onClick={() => performSave('CLIPBOARD')} className={`flex-1 py-4 text-center border-r text-lg font-light ${isDarkTheme ? 'text-zinc-300 hover:bg-zinc-800 border-zinc-800' : 'text-gray-700 hover:bg-gray-100 border-zinc-400'}`}>Clipboard</button>
                       <button onClick={() => performSave('NOTES')} className={`flex-1 py-4 text-center text-lg font-light ${isDarkTheme ? 'text-zinc-300 hover:bg-zinc-800' : 'text-gray-700 hover:bg-gray-100'}`}>Notes</button>
                   </div>
               </div>
@@ -516,7 +516,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
 const AiButton: React.FC<{ label: string; onClick: () => void; isDark: boolean; accentColor: string }> = ({ label, onClick, isDark, accentColor }) => (
     <button 
         onClick={onClick} 
-        className={`border py-3 px-2 rounded-lg text-sm transition-all ${isDark ? 'border-zinc-800 bg-[#1A1A1A] text-zinc-300 hover:text-white' : 'border-gray-200 bg-gray-50 text-gray-700 hover:text-black'}`}
+        className={`border py-3 px-2 rounded-lg text-sm transition-all ${isDark ? 'border-zinc-800 bg-[#1A1A1A] text-zinc-300 hover:text-white' : 'border-zinc-400 bg-gray-50 text-gray-700 hover:text-black'}`}
         style={{ borderColor: 'transparent' }}
         onMouseEnter={(e) => e.currentTarget.style.borderColor = accentColor} 
         onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}

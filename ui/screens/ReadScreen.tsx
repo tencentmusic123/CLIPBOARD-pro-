@@ -170,7 +170,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
     <div className={`h-screen w-full flex flex-col relative font-sans animate-fade-in ${bgColor} ${isDarkTheme ? 'text-white' : 'text-black'}`}>
       
       {/* --- HEADER --- */}
-      <header className={`px-4 py-4 flex items-center justify-between sticky top-0 z-30 h-16 border-b transition-colors ${isDarkTheme ? 'bg-black/95 border-zinc-900/50' : 'bg-white/95 border-gray-200'}`}>
+      <header className={`px-4 py-4 flex items-center justify-between sticky top-0 z-30 h-16 border-b transition-colors ${isDarkTheme ? 'bg-black/95 border-zinc-900/50' : 'bg-white/95 border-zinc-400'}`}>
         <div className="flex items-center flex-1">
             <button onClick={onBack} className={`mr-4 p-1 ${iconColor}`}>
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -228,7 +228,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
       {/* --- MENU DROPDOWN --- */}
       {isMenuOpen && (
           <div className="absolute top-16 right-4 z-50 w-56 animate-fade-in-down">
-              <div className={`border-2 rounded-xl overflow-hidden shadow-2xl flex flex-col font-mono text-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+              <div className={`border-2 rounded-xl overflow-hidden shadow-2xl flex flex-col font-mono text-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-zinc-400'}`} style={{ borderColor: accentColor }}>
                   <MenuBtn label="Copy" onClick={() => handleMenuAction('COPY')} isDark={isDarkTheme} />
                   <MenuBtn label="Edit" onClick={() => handleMenuAction('EDIT')} isDark={isDarkTheme} />
                   <MenuBtn label="Share" onClick={() => handleMenuAction('SHARE')} isDark={isDarkTheme} />
@@ -248,7 +248,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
       <main className="flex-1 overflow-y-auto p-6 scroll-smooth" onClick={() => { setIsSearchActive(false); setIsMenuOpen(false); setIsSmartMenuOpen(false); }}>
          {/* Metadata */}
          <div className="flex flex-wrap gap-2 mb-6">
-            <span className={`text-xs uppercase tracking-widest ${isDarkTheme ? 'text-zinc-500' : 'text-gray-500'}`}>{currentItem.timestamp}</span>
+            <span className={`text-xs uppercase tracking-widest ${isDarkTheme ? 'text-zinc-500' : 'text-zinc-600'}`}>{currentItem.timestamp}</span>
             {currentItem.tags.map(tag => (
                 <span key={tag} className="text-xs border px-2 rounded-full" style={{ borderColor: `${accentColor}4D`, color: accentColor }}>{tag}</span>
             ))}
@@ -283,7 +283,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
       {/* --- HASHTAG OVERLAY --- */}
       {isHashtagOverlayOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-             <div className={`border rounded-2xl p-6 w-full max-w-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+             <div className={`border rounded-2xl p-6 w-full max-w-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-zinc-400'}`} style={{ borderColor: accentColor }}>
                 <h3 className="text-lg mb-4 text-center font-bold tracking-widest uppercase" style={{ color: accentColor }}>Manage Tags</h3>
                 
                 <div className="flex flex-wrap gap-2 mb-6 max-h-60 overflow-y-auto">
@@ -312,7 +312,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
                 <div className="flex justify-between items-center px-2">
                     <button 
                         onClick={() => setIsHashtagOverlayOpen(false)} 
-                        className={`text-sm ${isDarkTheme ? 'text-zinc-500 hover:text-white' : 'text-gray-500 hover:text-black'}`}
+                        className={`text-sm ${isDarkTheme ? 'text-zinc-500 hover:text-white' : 'text-zinc-600 hover:text-black'}`}
                     >
                         Cancel
                     </button>
@@ -331,8 +331,8 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
       {/* --- SMART SELECT OVERLAY --- */}
       {isSmartMenuOpen && (
           <div className="absolute bottom-6 right-6 left-6 z-40 flex justify-end animate-fade-in-up">
-              <div className={`border rounded-xl shadow-2xl overflow-hidden max-h-[60vh] overflow-y-auto w-full max-w-xs ${isDarkTheme ? 'bg-[#1A1A1A] border-zinc-700' : 'bg-white border-gray-300'}`}>
-                  <div className={`px-4 py-3 border-b sticky top-0 ${isDarkTheme ? 'bg-black/50 border-zinc-800' : 'bg-white/50 border-gray-200'}`}>
+              <div className={`border rounded-xl shadow-2xl overflow-hidden max-h-[60vh] overflow-y-auto w-full max-w-xs ${isDarkTheme ? 'bg-[#1A1A1A] border-zinc-700' : 'bg-white border-zinc-400'}`}>
+                  <div className={`px-4 py-3 border-b sticky top-0 ${isDarkTheme ? 'bg-black/50 border-zinc-800' : 'bg-white/50 border-zinc-400'}`}>
                       <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: accentColor }}>Smart Recognition</h3>
                   </div>
                   {smartItems.length === 0 ? (
@@ -343,7 +343,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
                               <button 
                                 key={idx} 
                                 onClick={() => handleSmartAction(sItem)}
-                                className={`flex items-center px-4 py-4 border-b last:border-0 transition-colors text-left group ${isDarkTheme ? 'hover:bg-zinc-800 border-zinc-800' : 'hover:bg-gray-50 border-gray-200'}`}
+                                className={`flex items-center px-4 py-4 border-b last:border-0 transition-colors text-left group ${isDarkTheme ? 'hover:bg-zinc-800 border-zinc-800' : 'hover:bg-gray-50 border-zinc-400'}`}
                               >
                                   <div className="mr-4 shrink-0" style={{ color: accentColor }}>{getSmartIcon(sItem.type)}</div>
                                   <div className="flex flex-col overflow-hidden">
@@ -362,7 +362,7 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
 };
 
 const MenuBtn: React.FC<{ label: string; onClick: () => void; isDark: boolean }> = ({ label, onClick, isDark }) => (
-    <button onClick={onClick} className={`text-left w-full px-6 py-4 border-b last:border-0 transition-colors capitalize ${isDark ? 'text-white hover:bg-zinc-900 border-zinc-800' : 'text-black hover:bg-gray-100 border-gray-200'}`}>
+    <button onClick={onClick} className={`text-left w-full px-6 py-4 border-b last:border-0 transition-colors capitalize ${isDark ? 'text-white hover:bg-zinc-900 border-zinc-800' : 'text-black hover:bg-gray-100 border-zinc-400'}`}>
         {label}
     </button>
 );

@@ -551,8 +551,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
   // --- RENDER HELPERS ---
   const textColor = isDarkTheme ? 'text-white' : 'text-gray-900';
-  const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-gray-200';
-  const headerBg = isDarkTheme ? 'bg-gradient-to-b from-amber-900/40 via-zinc-900/60 to-zinc-950 border-amber-600/50' : 'bg-gradient-to-b from-amber-500/30 via-amber-400/20 to-amber-300/10 border-amber-400/40';
+  const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-zinc-400';
+  const headerBg = isDarkTheme ? 'bg-gradient-to-b from-amber-900/40 via-zinc-900/60 to-zinc-950 border-amber-600/50' : 'bg-white/80 border-zinc-400';
 
   return (
     <div 
@@ -567,7 +567,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
 
       {/* --- HEADER --- */}
       <header className={`px-4 z-30 flex items-center h-20 transition-all duration-300 sticky top-0 backdrop-blur-xl border-b ${headerBg} shadow-2xl`}>
-        <div className="max-w-xl mx-auto w-full flex items-center h-full animate-fade-in-down">
+        <div className="w-full flex items-center h-full animate-fade-in-down">
             {isSelectionMode ? (
                 <SelectionHeader 
                     selectedCount={selectedIds.size}
@@ -778,7 +778,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       {/* --- PERMISSION MODAL --- */}
       {showPermissionModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-              <div className={`border rounded-2xl p-6 w-full max-w-sm shadow-2xl ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+              <div className={`border rounded-2xl p-6 w-full max-w-sm shadow-2xl ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-zinc-400'}`} style={{ borderColor: accentColor }}>
                    {/* ... Content same as before ... */}
                    <div className="flex flex-col items-center text-center mb-6">
                        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: `${accentColor}20` }}>
@@ -980,7 +980,7 @@ const SearchHeader = ({ query, onQueryChange, onClose, textColor, accentColor }:
 
 const DefaultHeader = ({ accentColor, textColor, isSortMenuOpen, isFilterOpen, onMenuOpen, onSearchOpen, onSortToggle, onFilterToggle }: any) => {
     const { isDarkTheme } = useSettings();
-    const buttonColor = isDarkTheme ? accentColor : 'white';
+    const buttonColor = isDarkTheme ? accentColor : '#D4AF37';
     
         return (
             <div className="flex items-center w-full justify-between px-2">
@@ -992,7 +992,7 @@ const DefaultHeader = ({ accentColor, textColor, isSortMenuOpen, isFilterOpen, o
                 </div>
                 {/* Title - Center */}
                 <div className="flex-1 flex items-center justify-center">
-                    <h2 className="text-3xl font-bold tracking-widest uppercase whitespace-nowrap" style={{ color: isDarkTheme ? accentColor : 'white' }}>CLIPBOARD MAX</h2>
+                    <h2 className="text-3xl font-bold tracking-widest uppercase whitespace-nowrap" style={{ color: isDarkTheme ? accentColor : '#D4AF37' }}>CLIPBOARD MAX</h2>
                 </div>
                 {/* Actions - Right */}
                 <div className="flex-1 flex items-center justify-end space-x-2">

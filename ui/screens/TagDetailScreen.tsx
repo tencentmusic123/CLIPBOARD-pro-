@@ -89,7 +89,7 @@ const TagDetailScreen: React.FC<TagDetailScreenProps> = ({ tag, onBack, onRead }
   const textColor = isDarkTheme ? 'text-white' : 'text-black';
   const bgColor = isDarkTheme ? 'bg-black' : 'bg-gray-50';
   const headerBg = isDarkTheme ? 'bg-black/80 border-white/5' : 'bg-white/80 border-black/5';
-  const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-gray-200';
+  const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-zinc-400';
 
   return (
     <div className={`h-full w-full flex flex-col relative animate-fade-in font-sans ${bgColor} ${textColor}`}>
@@ -189,7 +189,7 @@ const TagDetailScreen: React.FC<TagDetailScreenProps> = ({ tag, onBack, onRead }
       {/* --- DELETE CONFIRM --- */}
       {showDeleteConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-              <div className={`border rounded-2xl p-6 w-full max-w-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-gray-300'}`} style={{ borderColor: accentColor }}>
+              <div className={`border rounded-2xl p-6 w-full max-w-sm ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-zinc-400'}`} style={{ borderColor: accentColor }}>
                   <h3 className={`text-xl text-center font-normal mb-8 leading-relaxed ${textColor}`}>
                       Move selected items to Trash?
                   </h3>
