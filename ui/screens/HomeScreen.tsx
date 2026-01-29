@@ -566,8 +566,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       <SideBar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onNavigate={onNavigate} />
 
       {/* --- HEADER --- */}
-      <header className={`px-4 z-30 flex items-center h-36 transition-all duration-300 sticky top-0 backdrop-blur-xl border-b ${headerBg} shadow-2xl`}>
-        <div className="max-w-5xl mx-auto w-full flex items-center h-full animate-fade-in-down">
+      <header className={`px-4 z-30 flex items-center h-20 transition-all duration-300 sticky top-0 backdrop-blur-xl border-b ${headerBg} shadow-2xl`}>
+        <div className="max-w-xl mx-auto w-full flex items-center h-full animate-fade-in-down">
             {isSelectionMode ? (
                 <SelectionHeader 
                     selectedCount={selectedIds.size}
@@ -982,29 +982,34 @@ const DefaultHeader = ({ accentColor, textColor, isSortMenuOpen, isFilterOpen, o
     const { isDarkTheme } = useSettings();
     const buttonColor = isDarkTheme ? accentColor : 'white';
     
-    return (
-    <div className="flex items-center justify-between w-full">
-        <div className="flex items-center space-x-4">
-            <button onClick={onMenuOpen} className="p-1 hover:opacity-70 transition-opacity" style={{ color: buttonColor }}>
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10" /></svg>
-            </button>
-            <h2 className="text-3xl font-bold tracking-widest uppercase" style={{ color: isDarkTheme ? accentColor : 'white' }}>CLIPBOARD MAX</h2>
-        </div>
-        <div className="flex items-center space-x-2">
-            <button onClick={onSearchOpen} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: buttonColor }}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </button>
-            <button onClick={onSortToggle} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: isSortMenuOpen ? accentColor : buttonColor }}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>
-            </button>
-            <button onClick={onFilterToggle} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: isFilterOpen ? accentColor : buttonColor }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-            </button>
-        </div>
-    </div>
-    );
+        return (
+            <div className="flex items-center w-full justify-between px-2">
+                {/* Sidebar/Menu Button - Left */}
+                <div className="flex-1 flex items-center">
+                    <button onClick={onMenuOpen} className="p-1 hover:opacity-70 transition-opacity" style={{ color: buttonColor }}>
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10" /></svg>
+                    </button>
+                </div>
+                {/* Title - Center */}
+                <div className="flex-1 flex items-center justify-center">
+                    <h2 className="text-3xl font-bold tracking-widest uppercase whitespace-nowrap" style={{ color: isDarkTheme ? accentColor : 'white' }}>CLIPBOARD MAX</h2>
+                </div>
+                {/* Actions - Right */}
+                <div className="flex-1 flex items-center justify-end space-x-2">
+                    <button onClick={onSearchOpen} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: buttonColor }}>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </button>
+                    <button onClick={onSortToggle} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: isSortMenuOpen ? accentColor : buttonColor }}>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>
+                    </button>
+                    <button onClick={onFilterToggle} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: isFilterOpen ? accentColor : buttonColor }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        );
 };
 
 export default HomeScreen;
