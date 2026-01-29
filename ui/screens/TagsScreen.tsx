@@ -109,7 +109,7 @@ const TagsScreen: React.FC<TagsScreenProps> = ({ onBack, onSelectTag }) => {
   };
 
   const textColor = isDarkTheme ? 'text-white' : 'text-black';
-  const bgColor = isDarkTheme ? 'bg-black' : 'bg-gray-50';
+  const bgColor = isDarkTheme ? 'bg-black' : 'bg-zinc-200';
   const headerBg = isDarkTheme ? 'bg-black/80 border-white/5' : 'bg-white/80 border-black/5';
 
   return (
@@ -246,7 +246,7 @@ const TagsScreen: React.FC<TagsScreenProps> = ({ onBack, onSelectTag }) => {
                     value={mergeNameInput}
                     onChange={(e) => setMergeNameInput(e.target.value)}
                     placeholder="New tag name (e.g. #Project)"
-                    className={`w-full border rounded-lg p-3 focus:outline-none mb-6 ${isDarkTheme ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-gray-50 border-zinc-400 text-black'}`}
+                    className={`w-full border rounded-lg p-3 focus:outline-none mb-6 ${isDarkTheme ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-zinc-200 border-zinc-400 text-black'}`}
                     style={{ borderColor: undefined }}
                   />
                   <div className="flex justify-between items-center px-2 text-lg">

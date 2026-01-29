@@ -15,14 +15,12 @@ import { clipboardRepository } from './data/repository/ClipboardRepository';
 import { Clipboard } from '@capacitor/clipboard';
 import { App as CapApp } from '@capacitor/app';
 import { detectSmartItems } from './util/SmartRecognition';
+import { Preferences } from '@capacitor/preferences';
 
-// App Content Component to use Context
 const AppContent: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('SPLASH');
-  // Track previous screen for smarter back navigation
   const [historyStack, setHistoryStack] = useState<ScreenName[]>([]);
   
-  // Lifted State for Home Tab persistence
   const [activeHomeTab, setActiveHomeTab] = useState<'clipboard' | 'notes'>('clipboard');
 
   const [selectedItem, setSelectedItem] = useState<ClipboardItem | null>(null);
@@ -30,12 +28,10 @@ const AppContent: React.FC = () => {
   const [isNewItem, setIsNewItem] = useState(false);
   const { isDarkTheme } = useSettings();
 
-  // --- STARTUP CLIPBOARD SYNC ---
   useEffect(() => {
     const performStartupSync = async () => {
-      // Direct check of localStorage to ensure we don't miss the check due to state hydration timing
-      const isSyncEnabled = localStorage.getItem('clipboard_sync_enabled') === 'true';
-      if (!isSyncEnabled) return;
+      const { value } = await Preferences.get({ key: 'clipboard_sync_enabled' });
+      if (value !== 'true') return;
 
       try {
         if (!document.hasFocus()) return;
@@ -44,14 +40,11 @@ const AppContent: React.FC = () => {
            const latestItems = await clipboardRepository.getAllItems('DATE', 'DESC');
            const latest = latestItems.find(i => i.category === 'clipboard' && !i.isDeleted);
            
-           // Don't sync if content matches latest
            if (latest && latest.content === text) return;
            
-           // Check if content is in trash folder - prevent syncing deleted items
            const trashedItems = latestItems.filter(i => i.isDeleted);
            if (trashedItems.some(i => i.content === text)) return;
            
-           // Auto-detect type using smart recognition
            let detectedType = ClipboardType.TEXT;
            const smartItems = detectSmartItems(text);
            if (smartItems.length > 0) {
@@ -87,18 +80,14 @@ const AppContent: React.FC = () => {
            });
         }
       } catch (e) {
-        // Silently fail if permission denied or no focus (normal behavior for web apps without user gesture)
         console.warn("Startup sync skipped", e);
       }
     };
 
-    // Run once after a small delay to allow app to settle
     const t = setTimeout(performStartupSync, 1000);
     return () => clearTimeout(t);
   }, []);
-  // ------------------------------
 
-  // --- BACK BUTTON HANDLER ---
   useEffect(() => {
     const handleBackButton = CapApp.addListener('backButton', () => {
       if (historyStack.length > 0) {
@@ -114,7 +103,6 @@ const AppContent: React.FC = () => {
       handleBackButton.then(listener => listener.remove());
     };
   }, [historyStack, currentScreen]);
-  // ------------------------------
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -149,7 +137,7 @@ const AppContent: React.FC = () => {
       id: Date.now().toString(),
       content: '',
       type: ClipboardType.TEXT,
-      category: activeHomeTab, // Create in current tab
+      category: activeHomeTab,
       timestamp: new Date().toLocaleString(),
       tags: activeHomeTab === 'notes' ? ['#notes'] : [],
       isPinned: false,
@@ -178,7 +166,6 @@ const AppContent: React.FC = () => {
   const handleSaveEdit = (savedItem?: ClipboardItem) => {
     if (savedItem) {
         setSelectedItem(savedItem);
-        // If we saved a new item, ensure we are on the correct tab to see it
         if (isNewItem) {
              setActiveHomeTab(savedItem.category);
         }
@@ -203,7 +190,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-zinc-950' : 'bg-[#D1E5F4]'}`}>
+    <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-zinc-950' : 'bg-blue-50'}`}>
       <div key={currentScreen} className="w-full h-full animate-fade-in">
           {renderScreen()}
       </div>

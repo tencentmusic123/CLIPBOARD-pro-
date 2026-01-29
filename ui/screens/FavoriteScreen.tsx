@@ -364,7 +364,7 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
           {loading ? (
              <div className="text-center mt-20 font-mono text-sm tracking-widest opacity-60 animate-pulse" style={{ color: accentColor }}>LOADING FAVORITES...</div>
           ) : filteredItems.length === 0 ? (
-             <div className="flex flex-col items-center justify-center mt-32 opacity-40">
+             <div className={`flex flex-col items-center justify-center mt-32 ${isDarkTheme ? "text-zinc-600" : "text-gray-400"}`}>
                  <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                  <span className="font-light tracking-wide">No favorites yet</span>
              </div>

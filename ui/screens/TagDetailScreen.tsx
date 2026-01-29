@@ -87,7 +87,7 @@ const TagDetailScreen: React.FC<TagDetailScreenProps> = ({ tag, onBack, onRead }
   };
 
   const textColor = isDarkTheme ? 'text-white' : 'text-black';
-  const bgColor = isDarkTheme ? 'bg-black' : 'bg-gray-50';
+  const bgColor = isDarkTheme ? 'bg-black' : 'bg-zinc-200';
   const headerBg = isDarkTheme ? 'bg-black/80 border-white/5' : 'bg-white/80 border-black/5';
   const overlayBg = isDarkTheme ? 'bg-zinc-900/95 border-white/10' : 'bg-white/95 border-zinc-400';
 

@@ -190,8 +190,8 @@ const GoldCard: React.FC<GoldCardProps> = ({
   const hoverEffect = isSelectionMode ? '' : (isDarkTheme ? 'hover:bg-zinc-800 hover:scale-[1.01]' : 'hover:shadow-lg hover:-translate-y-[2px] hover:scale-[1.01]');
   const activeEffect = isSelectionMode ? '' : 'active:scale-95 active:shadow-inner';
   const textColor = isDarkTheme ? 'text-zinc-200' : 'text-gray-900';
-  const tagColor = isDarkTheme ? 'text-zinc-500' : 'text-zinc-600';
-  const borderColor = isDarkTheme ? 'border-white/5' : 'border-zinc-400/80';
+  const tagColor = isDarkTheme ? 'text-zinc-500' : 'text-zinc-700';
+  const borderColor = isDarkTheme ? 'border-white/10' : 'border-neutral-400';
 
   // Animation stagger
   const animationDelay = `${index * 50}ms`;
@@ -218,15 +218,15 @@ const GoldCard: React.FC<GoldCardProps> = ({
       <div className="absolute -top-2 -right-1 z-20 flex space-x-1">
           {item.isFavorite && (
               <div className="bg-red-500 rounded-full p-1.5 shadow-sm border border-white dark:border-black animate-scale-in">
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="white"/>
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill={isDarkTheme ? "white" : "black"} xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill={isDarkTheme ? "white" : "black"}/>
                   </svg>
               </div>
           )}
           {item.isPinned && (
               <div className="bg-amber-400 rounded-full p-1.5 shadow-sm border border-white dark:border-black animate-scale-in">
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M16 12V4H17V2H7V4H8V12L6 14V16H11V22H13V16H18V14L16 12Z" fill="white"/>
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill={isDarkTheme ? "white" : "black"} xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16 12V4H17V2H7V4H8V12L6 14V16H11V22H13V16H18V14L16 12Z" fill={isDarkTheme ? "white" : "black"}/>
                   </svg>
               </div>
           )}
@@ -256,7 +256,7 @@ const GoldCard: React.FC<GoldCardProps> = ({
 
             {/* ICONS (Type) */}
             {item.type !== ClipboardType.TEXT && (
-                <div className="text-zinc-400 shrink-0 ml-2 mt-1">
+                <div className={`shrink-0 ml-2 mt-1 ${isDarkTheme ? 'text-zinc-400' : 'text-zinc-700'}`}>
                     <svg className="w-5 h-5" fill={item.type === ClipboardType.PHONE || item.type === ClipboardType.SECURE ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={item.type === ClipboardType.PHONE || item.type === ClipboardType.SECURE ? 0 : 2}>
                         {getIcon(item.type)}
                     </svg>

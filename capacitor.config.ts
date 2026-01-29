@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.clipboardmax.app',
-  appName: 'CLIPBOARD MAX',
+  appId: 'com.clipboardmax.fresh',
+  appName: 'Clipboard Max',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

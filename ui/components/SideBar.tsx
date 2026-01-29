@@ -57,7 +57,7 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose, onNavigate }) => {
 
              <div className="relative z-10">
                 <h1 className="text-2xl font-bold tracking-widest uppercase drop-shadow-sm" style={{ color: accentColor }}>
-                  CLIPBOARD MAX
+                  Clipboard Max
                 </h1>
                 <p className={`text-xs mt-1 font-medium ${textSecondary}`}>Efficient. Secure. Offline.</p>
              </div>
