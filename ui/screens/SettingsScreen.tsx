@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSettings } from '../context/SettingsContext';
-import { useAuth } from '../context/AuthContext';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 
 interface SettingsScreenProps {
@@ -18,8 +17,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
     autoBackupFrequency, setAutoBackupFrequency,
     backupDestination, setBackupDestination
   } = useSettings();
-
-  const { user, loginWithGoogle, isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   // --- UI Local State ---
   const [showBackupFreq, setShowBackupFreq] = useState(false);
@@ -54,10 +51,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   };
 
   // Logic for Auto Backup Destination Setting
-  const handleBackupDestinationSelect = async (dest: string) => {
-      if (dest === 'Google' && !isAuthenticated) {
-          await loginWithGoogle();
-      }
+  const handleBackupDestinationSelect = (dest: string) => {
       setBackupDestination(dest);
       setShowBackupDest(false);
   };
@@ -68,60 +62,35 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       setActionModalType(type);
   };
 
-  const handleDestinationConfirm = async (destination: 'Google' | 'Local') => {
-      // 1. Check Auth if Google
-      if (destination === 'Google' && !isAuthenticated) {
-          await loginWithGoogle();
-      }
-      
-      const destLabel = destination === 'Google' ? 'Google Drive' : 'Local Storage';
-      
-      // Close Modal immediately so we can show loading state on main screen or via toast
+  const handleDestinationConfirm = async (destination: 'Local') => {
+      // Close Modal immediately
       setActionModalType(null);
 
-      // 2. Perform Action based on destination
-      if (destination === 'Google') {
-           // --- SIMULATED GOOGLE ACTION ---
-           if (actionModalType === 'BACKUP') {
-              setIsBackingUp(true);
-              setTimeout(() => {
-                  setIsBackingUp(false);
-                  showToast(`Backup successfully saved to ${destLabel}`);
-              }, 2000);
-           } else {
-               setIsRestoring(true);
-               setTimeout(() => {
-                   setIsRestoring(false);
-                   showToast(`Data restored from ${destLabel}`);
-               }, 2000);
-           }
-      } else {
-          // --- LOCAL STORAGE ACTION ---
-          if (actionModalType === 'BACKUP') {
-              try {
-                  const data = await clipboardRepository.exportData();
-                  const blob = new Blob([data], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  
-                  // Trigger Download
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `clipboard_max_backup_${new Date().toISOString().slice(0, 10)}.json`;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                  URL.revokeObjectURL(url);
-                  
-                  showToast("Backup downloaded successfully");
-              } catch (e) {
-                  showToast("Backup generation failed");
-                  console.error(e);
-              }
-          } else if (actionModalType === 'RESTORE') {
-              // Trigger File Picker
-              if (fileInputRef.current) {
-                  fileInputRef.current.click();
-              }
+      // --- LOCAL STORAGE ACTION ---
+      if (actionModalType === 'BACKUP') {
+          try {
+              const data = await clipboardRepository.exportData();
+              const blob = new Blob([data], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              
+              // Trigger Download
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `clipboard_max_backup_${new Date().toISOString().slice(0, 10)}.json`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              
+              showToast("Backup downloaded successfully");
+          } catch (e) {
+              showToast("Backup generation failed");
+              console.error(e);
+          }
+      } else if (actionModalType === 'RESTORE') {
+          // Trigger File Picker
+          if (fileInputRef.current) {
+              fileInputRef.current.click();
           }
       }
   };
@@ -161,7 +130,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   };
 
   // --- Styles & Classes ---
-  // Updated: Changed min-h-screen to h-full to fit within animated container without breaking overflow
   const containerClass = `h-full flex flex-col font-sans animate-fade-in ${isDarkTheme ? 'bg-black text-white' : 'bg-zinc-200 text-black'}`;
   const headerClass = `px-6 py-5 flex items-center justify-center sticky top-0 z-20 border-b relative ${isDarkTheme ? 'bg-black/95 border-zinc-800' : 'bg-white/95 border-zinc-400'}`;
   const sectionTitleClass = `text-xs font-bold tracking-[0.15em] uppercase mb-3 mt-8 px-4 opacity-50`;
@@ -327,15 +295,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                                 onClick={(e) => { e.stopPropagation(); setShowBackupDest(!showBackupDest); setShowBackupFreq(false); }}
                                 className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors flex items-center space-x-1 ${isDarkTheme ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                             >
-                                <span className="max-w-[80px] truncate">{backupDestination}</span>
+                                <span className="max-w-[80px] truncate">{backupDestination === 'Google' ? 'Local files' : backupDestination}</span>
                             </button>
                              {/* Destination Dropdown */}
                            {showBackupDest && (
                                 <div className={`absolute top-full right-0 mt-2 z-30 w-48 rounded-xl shadow-xl border overflow-hidden ${isDarkTheme ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-400'}`}>
-                                     <button onClick={(e) => { e.stopPropagation(); handleBackupDestinationSelect('Google'); }} className={`w-full text-left px-4 py-3 text-sm hover:opacity-80 flex flex-col ${isDarkTheme ? 'text-white hover:bg-zinc-800' : 'text-black hover:bg-gray-100'}`}>
-                                         <span>Google Drive</span>
-                                         {isAuthenticated && backupDestination === 'Google' && <span className="text-[10px] opacity-50">{user?.email}</span>}
-                                     </button>
                                      <button onClick={(e) => { e.stopPropagation(); handleBackupDestinationSelect('Local files'); }} className={`w-full text-left px-4 py-3 text-sm hover:opacity-80 ${isDarkTheme ? 'text-white hover:bg-zinc-800' : 'text-black hover:bg-gray-100'}`}>
                                          Local Files
                                      </button>
@@ -403,21 +367,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                   </h3>
                   
                   <div className="space-y-3">
-                      <button 
-                          onClick={() => handleDestinationConfirm('Google')}
-                          className={`w-full flex items-center p-4 rounded-xl border transition-all relative overflow-hidden group ${isDarkTheme ? 'hover:bg-zinc-900 border-zinc-800' : 'hover:bg-gray-50 border-zinc-400'}`}
-                      >
-                          <svg className="w-6 h-6 mr-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 0.507 5.387 0 12s5.36 12 12.48 12c3.6 0 6.347-1.173 8.4-3.253 2.187-2.187 2.867-5.333 2.867-8.133 0-.8-.08-1.453-.173-2.08H12.48z"/>
-                          </svg>
-                          <div className="text-left flex-1">
-                              <div className="font-medium text-base">Google Drive</div>
-                              <div className={`text-xs ${isDarkTheme ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                                  {isAuthenticated ? `As ${user?.email}` : 'Sign in required'}
-                              </div>
-                          </div>
-                      </button>
-
                       <button 
                           onClick={() => handleDestinationConfirm('Local')}
                           className={`w-full flex items-center p-4 rounded-xl border transition-all ${isDarkTheme ? 'hover:bg-zinc-900 border-zinc-800' : 'hover:bg-gray-50 border-zinc-400'}`}
