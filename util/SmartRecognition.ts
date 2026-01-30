@@ -33,7 +33,6 @@ export const detectSmartItems = (text: string, itemType?: ClipboardType): SmartI
   }
 
   // 2. Sensitive Keywords
-  // Matches: "password: 123", "password = 123", "password is 123"
   const keywordRegex = /\b(password|passwd|pin|secret|token|api[_\-]?key|access[_\-]?token|auth[_\-]?token|verification[_\-]?code|otp|client[_\-]?secret)\s*(:|is|=)\s*\S+/gi;
   const keywordMatches = text.match(keywordRegex);
   if (keywordMatches) {

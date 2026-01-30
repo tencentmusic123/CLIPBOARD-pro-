@@ -7,7 +7,7 @@ import { ClipboardItem, ScreenName, ClipboardType, SortOption, SortDirection } f
 import { useSettings } from '../context/SettingsContext';
 import JSZip from 'jszip';
 import { Clipboard } from '@capacitor/clipboard';
-import { detectPrimaryType, maskContent } from '../../util/SmartRecognition';
+import { detectSmartItems, detectPrimaryType, maskContent } from '../../util/SmartRecognition';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
@@ -197,15 +197,36 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
   // --- COMPUTED VALUES ---
   const displayItems = useMemo(() => {
     return items.filter(item => {
+      // 1. Check Category
       if (item.category !== activeTab) return false;
+      
+      // 2. Check Search
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesContent = (item.displayContent || item.content).toLowerCase().includes(query);
         const matchesTags = item.tags.some(t => t.toLowerCase().includes(query));
         if (!matchesContent && !matchesTags) return false;
       }
-      if (filter.type !== 'ALL' && item.type !== filter.type) return false;
+      
+      // 3. Check Filter (Deep Check)
+      if (filter.type !== 'ALL') {
+          // If primary match, return true
+          if (item.type === filter.type) return true;
+          
+          // If not primary match, check if the content contains the type
+          // Note: We skip this deep check for TEXT because almost everything is text.
+          if (filter.type !== ClipboardType.TEXT) {
+              const detected = detectSmartItems(item.content);
+              const hasEmbeddedType = detected.some(d => d.type === filter.type);
+              if (!hasEmbeddedType) return false;
+          } else {
+              return false;
+          }
+      }
+      
+      // 4. Check Tags
       if (filter.tag !== 'All' && !item.tags.includes(filter.tag)) return false;
+      
       return true;
     });
   }, [items, searchQuery, filter, activeTab]);
