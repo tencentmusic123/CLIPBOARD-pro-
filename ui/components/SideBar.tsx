@@ -11,15 +11,11 @@ interface SideBarProps {
 
 const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose, onNavigate }) => {
   const { accentColor, isDarkTheme } = useSettings();
-  const { user, loginWithGoogle, logout, isLoading } = useAuth();
+  const { user, logout, isLoading } = useAuth();
 
   const handleMenuClick = (screen: ScreenName) => {
     onNavigate(screen);
     onClose();
-  };
-
-  const handleLoginClick = async () => {
-      await loginWithGoogle();
   };
 
   const handleLogoutClick = (e: React.MouseEvent) => {
@@ -71,49 +67,37 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose, onNavigate }) => {
             <MenuItem icon="settings" label="Settings" onClick={() => handleMenuClick('SETTINGS')} accentColor={accentColor} isDarkTheme={isDarkTheme} />
         </nav>
 
-        {/* Footer - Fixed Height */}
-        <div className={`shrink-0 p-6 border-t ${footerClass}`}>
-            {isLoading ? (
-                <div className="flex items-center space-x-4 w-full py-2 animate-pulse">
-                     <div className={`w-10 h-10 rounded-full ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-200'}`}></div>
-                     <div className="flex flex-col space-y-2 flex-1">
-                         <div className={`h-3 rounded w-3/4 ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-200'}`}></div>
-                         <div className={`h-2 rounded w-1/2 ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-200'}`}></div>
-                     </div>
-                </div>
-            ) : !user ? (
-                <button onClick={handleLoginClick} className="flex items-center space-x-4 w-full group py-2">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors border ${isDarkTheme ? 'bg-zinc-800 border-zinc-700 group-hover:bg-zinc-700' : 'bg-white border-zinc-400 group-hover:bg-gray-50 shadow-sm'}`}>
-                        <svg className={`w-5 h-5 ${textPrimary}`} fill="currentColor" viewBox="0 0 24 24">
-                           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3 0 1.66-1.34 3-3 3S9 9.66 9 8c0-1.66 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-                        </svg>
-                    </div>
-                    <div className="flex flex-col items-start">
-                        <span className={`font-medium text-sm transition-colors ${textPrimary}`}>
-                            Login or Sign up
-                        </span>
-                        <span className={`text-xs ${textSecondary}`}>Sync with Google</span>
-                    </div>
-                </button>
-            ) : (
-                 <div className="flex items-center justify-between w-full py-2 group relative">
-                    <div className="flex items-center space-x-3 overflow-hidden">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md" style={{ backgroundColor: accentColor }}>
-                            {user.name.charAt(0)}
-                        </div>
-                        <div className="flex flex-col overflow-hidden">
-                            <span className={`text-sm font-medium truncate ${textPrimary}`}>{user.name}</span>
-                            <span className={`text-xs truncate ${textSecondary}`}>{user.email}</span>
+        {/* Footer - Fixed Height (Only visible if loading or logged in) */}
+        {(isLoading || user) && (
+            <div className={`shrink-0 p-6 border-t ${footerClass}`}>
+                {isLoading ? (
+                    <div className="flex items-center space-x-4 w-full py-2 animate-pulse">
+                        <div className={`w-10 h-10 rounded-full ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-200'}`}></div>
+                        <div className="flex flex-col space-y-2 flex-1">
+                            <div className={`h-3 rounded w-3/4 ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-200'}`}></div>
+                            <div className={`h-2 rounded w-1/2 ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-200'}`}></div>
                         </div>
                     </div>
-                    <button onClick={handleLogoutClick} className={`p-2 transition-colors hover:text-red-500 ${isDarkTheme ? 'text-zinc-600' : 'text-gray-400'}`}>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                             <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                    </button>
-                </div>
-            )}
-        </div>
+                ) : user ? (
+                    <div className="flex items-center justify-between w-full py-2 group relative">
+                        <div className="flex items-center space-x-3 overflow-hidden">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md" style={{ backgroundColor: accentColor }}>
+                                {user.name.charAt(0)}
+                            </div>
+                            <div className="flex flex-col overflow-hidden">
+                                <span className={`text-sm font-medium truncate ${textPrimary}`}>{user.name}</span>
+                                <span className={`text-xs truncate ${textSecondary}`}>{user.email}</span>
+                            </div>
+                        </div>
+                        <button onClick={handleLogoutClick} className={`p-2 transition-colors hover:text-red-500 ${isDarkTheme ? 'text-zinc-600' : 'text-gray-400'}`}>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                        </button>
+                    </div>
+                ) : null}
+            </div>
+        )}
       </div>
     </>
   );
