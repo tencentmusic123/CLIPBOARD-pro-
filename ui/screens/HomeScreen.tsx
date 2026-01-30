@@ -330,7 +330,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       const textToShare = selectedItems.map(i => i.content).join('\n\n');
       
       try {
-          // Use Capacitor Share plugin which works on both Mobile and Web (if supported)
           await Share.share({
               title: 'Shared Clips',
               text: textToShare,
@@ -385,18 +384,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       try {
           if (Capacitor.isNativePlatform()) {
               // --- NATIVE EXPORT (Android/iOS) ---
+              // Use Cache directory which is always writable without permissions
               let fileUri = '';
               let fileName = '';
 
               if (selectedItems.length === 1) {
-                  // Single File: Save as .txt
                   const item = selectedItems[0];
                   fileName = (item.title ? item.title.replace(/[^a-z0-9_\-\. ]/gi, '') : `Clip`) + '.txt';
                   
                   await Filesystem.writeFile({
                       path: fileName,
                       data: item.content,
-                      directory: Directory.Cache,
+                      directory: Directory.Cache, 
                       encoding: Encoding.UTF8
                   });
                   
@@ -406,14 +405,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
                   });
                   fileUri = result.uri;
               } else {
-                  // Multiple Files: Save as .zip
                   const zip = new JSZip();
                   selectedItems.forEach((item, index) => {
                       const safeTitle = item.title ? item.title.replace(/[^a-z0-9_\-\. ]/gi, '') : `Clip`;
                       zip.file(`${safeTitle}_${index + 1}.txt`, item.content);
                   });
                   
-                  // Generate Base64 string for Capacitor Filesystem
                   const content = await zip.generateAsync({ type: 'base64' });
                   fileName = `Export_${Date.now()}.zip`;
                   
@@ -421,7 +418,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
                       path: fileName,
                       data: content,
                       directory: Directory.Cache
-                      // No encoding needed for base64 zip data, it's treated as binary if not utf8
                   });
                   
                   const result = await Filesystem.getUri({ 
@@ -431,11 +427,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
                   fileUri = result.uri;
               }
 
-              // Use Share API to "Save" or "Send" the file
+              // Share the file from Cache. User can "Save to Files" from the share sheet.
               await Share.share({
                   title: 'Export Clips',
-                  url: fileUri,
+                  files: [fileUri], 
               });
+              
+              showToast("Opened Share Sheet");
 
           } else {
               // --- WEB EXPORT (Browser) ---
@@ -467,8 +465,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
                   document.body.removeChild(a);
                   URL.revokeObjectURL(url);
               }
+              showToast("Export downloaded");
           }
-          showToast("Export ready");
       } catch (e) {
           console.error("Export failed", e);
           showToast("Export failed");
