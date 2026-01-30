@@ -820,21 +820,33 @@ const SearchHeader = ({ query, onQueryChange, onClose, textColor, accentColor }:
 const DefaultHeader = ({ accentColor, textColor, isSortMenuOpen, isFilterOpen, onMenuOpen, onSearchOpen, onSortToggle, onFilterToggle }: any) => {
     const { isDarkTheme } = useSettings();
     const buttonColor = isDarkTheme ? accentColor : '#D4AF37';
-    return (
-        <div className="flex items-center w-full justify-between px-2">
-            <div className="flex-1 flex items-center">
-                <button onClick={onMenuOpen} className="p-1 hover:opacity-70 transition-opacity" style={{ color: buttonColor }}><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10" /></svg></button>
+    
+        return (
+            <div className="flex items-center justify-between w-full px-4 h-full">
+                {/* Left: Sidebar Icon (Standardized to w-6 h-6) */}
+                <button onClick={onMenuOpen} className="p-2 hover:bg-white/5 rounded-full transition-colors flex-shrink-0" style={{ color: buttonColor }}>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10" /></svg>
+                </button>
+
+                {/* Center: Title (text-2xl, pb-1 for visual lift, Gold color in light mode) */}
+                <h2 className="text-2xl font-bold tracking-widest whitespace-nowrap mx-4 truncate pb-1" style={{ color: isDarkTheme ? accentColor : '#D4AF37' }}>
+                    Clipboard Max
+                </h2>
+
+                {/* Right: Actions (Standardized Icons) */}
+                <div className="flex items-center space-x-1 flex-shrink-0">
+                    <button onClick={onSearchOpen} className="p-2 rounded-full hover:bg-white/5 transition-colors" style={{ color: buttonColor }}>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </button>
+                    <button onClick={onSortToggle} className="p-2 rounded-full hover:bg-white/5 transition-colors" style={{ color: isSortMenuOpen ? accentColor : buttonColor }}>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>
+                    </button>
+                    <button onClick={onFilterToggle} className="p-2 rounded-full hover:bg-white/5 transition-colors" style={{ color: isFilterOpen ? accentColor : buttonColor }}>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                    </button>
+                </div>
             </div>
-            <div className="flex-1 flex items-center justify-center">
-                    <h2 className="text-3xl font-bold tracking-widest whitespace-nowrap" style={{ color: isDarkTheme ? accentColor : '#D4AF37' }}>Clipboard Max</h2>
-            </div>
-            <div className="flex-1 flex items-center justify-end space-x-2">
-                <button onClick={onSearchOpen} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: buttonColor }}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
-                <button onClick={onSortToggle} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: isSortMenuOpen ? accentColor : buttonColor }}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg></button>
-                <button onClick={onFilterToggle} className={`p-2 rounded-full hover:bg-white/5 transition-colors`} style={{ color: isFilterOpen ? accentColor : buttonColor }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg></button>
-            </div>
-        </div>
-    );
+        );
 };
 
 export default HomeScreen;
