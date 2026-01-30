@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ClipboardItem, ClipboardType } from '../../types';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { useSettings } from '../context/SettingsContext';
-import { removeDuplicates, cleanupFormat, convertToList, fixGrammar, changeCase } from '../../util/AITextProcessor';
+import { removeDuplicates, cleanupFormat, convertToList, fixGrammar, changeCase, highlightSmartItems } from '../../util/AITextProcessor';
 import { Clipboard } from '@capacitor/clipboard';
 import { detectSmartItems } from '../../util/SmartRecognition';
 
@@ -35,7 +35,6 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
   const caseModeRef = useRef<number>(0);
   
   // --- CUSTOM HISTORY ENGINE ---
-  // We use Refs for history to prevent re-renders while typing which causes cursor jumping
   const historyStack = useRef<string[]>([]);
   const historyIndex = useRef<number>(-1);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -43,7 +42,6 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
   // --- Initialization ---
   useEffect(() => {
     if (editorRef.current) {
-        // Initialize content
         const initialContent = item.htmlContent || item.content || '';
         if (item.htmlContent) {
             editorRef.current.innerHTML = item.htmlContent;
@@ -51,52 +49,32 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
             editorRef.current.innerText = item.content;
         }
         
-        // Set initial content state
         setHasContent(!!(item.content || item.htmlContent));
 
-        // Initialize History
         historyStack.current = [editorRef.current.innerHTML];
         historyIndex.current = 0;
     }
   }, [item]);
 
   // --- History Logic ---
-
-  /**
-   * Pushes the current state of the editor to the history stack.
-   * Should be called AFTER a significant change (AI action, button press).
-   */
   const saveSnapshot = useCallback(() => {
       if (!editorRef.current) return;
-      
       const currentContent = editorRef.current.innerHTML;
       const currentIndex = historyIndex.current;
       const currentStack = historyStack.current;
-
-      // Don't save if it's identical to the current state
       if (currentStack[currentIndex] === currentContent) return;
-
-      // If we are in the middle of the stack (did undo), chop off the future
       const newStack = currentStack.slice(0, currentIndex + 1);
-      
       newStack.push(currentContent);
       historyStack.current = newStack;
       historyIndex.current = newStack.length - 1;
   }, []);
 
-  /**
-   * Handles typing input. Debounces the snapshot save so we don't 
-   * save every single character, but save when the user pauses.
-   */
   const handleInput = () => {
-      // Update placeholder visibility
       setHasContent(!!(editorRef.current?.innerText?.trim()));
-      
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      
       debounceTimer.current = setTimeout(() => {
           saveSnapshot();
-      }, 500); // Save 500ms after last keystroke
+      }, 500); 
   };
 
   const performUndo = () => {
@@ -105,7 +83,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
           historyIndex.current--;
           const prevContent = historyStack.current[historyIndex.current];
           editorRef.current.innerHTML = prevContent;
-          placeCaretAtEnd(editorRef.current); // Move cursor to end to prevent getting stuck
+          placeCaretAtEnd(editorRef.current); 
       }
   };
 
@@ -134,24 +112,16 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
   };
 
   // --- Editor Helpers ---
-
-  /**
-   * Updates content programmatically (for AI/Case tools).
-   * Automatically saves history before and after to ensure Undo works.
-   */
-  const updateContentProgrammatically = (newText: string) => {
+  const updateContentProgrammatically = (newText: string, asHtml: boolean = false) => {
       if (!editorRef.current) return;
-      
-      // 1. Force save current state before changing (if distinct)
       saveSnapshot();
-
-      // 2. Apply change
-      // Note: Replacing innerText removes bold/italic tags. 
-      // This is expected for "Text Transformers" like Case Converter.
-      // But because we saved history above, Undo will restore the tags!
-      editorRef.current.innerText = newText;
-
-      // 3. Save new state
+      
+      if (asHtml) {
+          editorRef.current.innerHTML = newText;
+      } else {
+          editorRef.current.innerText = newText;
+      }
+      
       saveSnapshot();
   };
 
@@ -165,30 +135,22 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
 
   const handleEditorInteraction = () => {
       checkActiveStyles();
-      // Close menus on interaction
       if (isAiMenuOpen) setIsAiMenuOpen(false);
   };
 
-  // Helper to prevent focus loss when clicking toolbar buttons
   const handleToolbarMouseDown = (e: React.MouseEvent) => {
       e.preventDefault();
   };
 
   const execCmd = (command: string, value: string | undefined = undefined) => {
-      // 1. Execute Native Command
       document.execCommand(command, false, value);
-      
-      // 2. Force Snapshot immediately so this formatting change is undoable
       if (editorRef.current) {
-          // Clear any pending typing debounce to keep timeline clean
           if (debounceTimer.current) clearTimeout(debounceTimer.current);
-          
           const newStack = historyStack.current.slice(0, historyIndex.current + 1);
           newStack.push(editorRef.current.innerHTML);
           historyStack.current = newStack;
           historyIndex.current = newStack.length - 1;
       }
-      
       if (editorRef.current) editorRef.current.focus();
       checkActiveStyles();
   };
@@ -196,15 +158,12 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
   const handleChangeCase = () => {
       if (!editorRef.current) return;
       const text = editorRef.current.innerText;
-      
       const mode = (caseModeRef.current + 1) % 4;
       caseModeRef.current = mode;
-      
       const newText = changeCase(text, mode);
       updateContentProgrammatically(newText);
   };
 
-  // --- Input Handlers ---
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.value.length <= 30) setTitle(e.target.value);
   };
@@ -218,22 +177,25 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
       switch(action) {
           case 'DUPLICATES':
               newText = removeDuplicates(text);
+              updateContentProgrammatically(newText);
               break;
 
           case 'CLEANUP':
               newText = cleanupFormat(text);
+              updateContentProgrammatically(newText);
               break;
 
           case 'LIST':
               newText = convertToList(text);
+              updateContentProgrammatically(newText);
               break;
 
-          case 'GRAMMAR':
-              newText = fixGrammar(text);
+          case 'IMPORTANT':
+              newText = highlightSmartItems(text);
+              updateContentProgrammatically(newText, true); // Pass true for HTML
               break;
       }
       
-      updateContentProgrammatically(newText);
       setIsAiMenuOpen(false);
   };
 
@@ -245,26 +207,17 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
       const category = destination === 'CLIPBOARD' ? 'clipboard' : 'notes';
       const timestamp = new Date().toLocaleString();
       
-      // Auto-detect type using smart recognition
       let detectedType = item.type || ClipboardType.TEXT;
       const smartItems = detectSmartItems(content);
       if (smartItems.length > 0) {
         const firstType = smartItems[0].type;
         switch (firstType) {
-          case 'PHONE':
-            detectedType = ClipboardType.PHONE;
-            break;
-          case 'EMAIL':
-            detectedType = ClipboardType.EMAIL;
-            break;
-          case 'LINK':
-            detectedType = ClipboardType.LINK;
-            break;
-          case 'LOCATION':
-            detectedType = ClipboardType.LOCATION;
-            break;
-          default:
-            detectedType = item.type || ClipboardType.TEXT;
+          case 'PHONE': detectedType = ClipboardType.PHONE; break;
+          case 'EMAIL': detectedType = ClipboardType.EMAIL; break;
+          case 'LINK': detectedType = ClipboardType.LINK; break;
+          case 'LOCATION': detectedType = ClipboardType.LOCATION; break;
+          case 'SECURE': detectedType = ClipboardType.SECURE; break;
+          default: detectedType = item.type || ClipboardType.TEXT;
         }
       }
       
@@ -327,19 +280,17 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
   const getBtnStyle = (isActive: boolean) => {
       if (isDarkTheme) {
           return isActive 
-            ? { backgroundColor: accentColor, color: '#000000' } // Active Dark Mode (Gold Bg, Black Text)
-            : { color: '#A1A1AA' }; // Inactive Dark Mode (Zinc Text)
+            ? { backgroundColor: accentColor, color: '#000000' }
+            : { color: '#A1A1AA' };
       } else {
           return isActive
-            ? { backgroundColor: accentColor, color: '#000000' } // Active Light Mode (Gold Bg, Black Text)
-            : { color: '#6B7280' }; // Inactive Light Mode (Gray Text)
+            ? { backgroundColor: accentColor, color: '#000000' }
+            : { color: '#6B7280' };
       }
   };
 
   return (
     <div className={`h-screen w-full flex flex-col animate-fade-in font-sans relative ${bgColor} ${textColor}`}>
-      
-      {/* --- HEADER --- */}
       <header className={`px-4 py-3 flex items-center justify-between border-b sticky top-0 z-30 backdrop-blur-xl ${headerBg}`}>
         <div className="flex items-center flex-1 max-w-4xl mx-auto w-full">
             <button onClick={onBack} className={`mr-3 ${isDarkTheme ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'}`}>
@@ -354,21 +305,12 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                 placeholder="TITLE (optional)"
                 className={`bg-transparent text-lg focus:outline-none w-full font-medium ${isDarkTheme ? 'text-zinc-300 placeholder-zinc-600' : 'text-gray-800 placeholder-gray-400'}`}
             />
-            
             <div className="flex items-center space-x-4 pl-4">
                  <div className={`flex items-center space-x-3 ${isDarkTheme ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                     <button 
-                        onMouseDown={handleToolbarMouseDown}
-                        onClick={performUndo} 
-                        className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}
-                     >
+                     <button onMouseDown={handleToolbarMouseDown} onClick={performUndo} className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}>
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                      </button>
-                     <button 
-                        onMouseDown={handleToolbarMouseDown}
-                        onClick={performRedo} 
-                        className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}
-                     >
+                     <button onMouseDown={handleToolbarMouseDown} onClick={performRedo} className="hover:opacity-75" style={{ color: isDarkTheme ? undefined : accentColor }}>
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg>
                      </button>
                  </div>
@@ -376,8 +318,6 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
             </div>
         </div>
       </header>
-
-      {/* --- CONTENT AREA --- */}
       <main className="flex-1 relative overflow-y-auto">
         <div className="max-w-4xl mx-auto w-full min-h-full flex flex-col">
             <div 
@@ -395,8 +335,6 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                 <div className="absolute top-6 left-6 text-zinc-600 pointer-events-none text-base pl-4 md:pl-0">Type here...</div>
             )}
         </div>
-
-        {/* Help Overlay */}
         {isHelpOpen && (
             <div className={`absolute inset-x-4 top-4 bottom-4 border rounded-2xl p-6 z-40 overflow-y-auto backdrop-blur-md shadow-2xl animate-fade-in max-w-lg mx-auto ${isDarkTheme ? 'bg-[#121212]/95 border-gold/50' : 'bg-white/95 border-zinc-400'}`} style={{ borderColor: isDarkTheme ? undefined : accentColor }}>
                  <h3 className="text-lg font-bold mb-4" style={{ color: accentColor }}>AI Tools Guide</h3>
@@ -404,13 +342,11 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                     <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Remove Duplicates:</strong> Finds and deletes any repeated lines to make lists shorter.</li>
                     <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Clean Up:</strong> The "Fix All" button. Removes extra spaces, empty lines, and bad formatting.</li>
                     <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Make List:</strong> Turns long text (lines, sentences, or commas) into a clean bulleted list.</li>
-                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Grammar Check:</strong> Fixes common mistakes like extra spaces, capitalization, and enables spell check.</li>
+                    <li><strong className={isDarkTheme ? 'text-white' : 'text-black'}>Important Look:</strong> Automatically finds items like phones, emails, and passwords and makes them <b className={isDarkTheme ? 'text-white' : 'text-black'}>bold</b>.</li>
                  </ul>
             </div>
         )}
       </main>
-
-      {/* --- AI MENU OVERLAY --- */}
       {isAiMenuOpen && (
           <div className="absolute bottom-24 left-4 right-4 z-50 animate-fade-in-up max-w-2xl mx-auto">
                <div className="flex justify-end mb-2 mr-1">
@@ -426,76 +362,24 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
                    <AiButton label="Remove Duplicates" onClick={() => handleAiAction('DUPLICATES')} isDark={isDarkTheme} accentColor={accentColor} />
                    <AiButton label="Clean Up" onClick={() => handleAiAction('CLEANUP')} isDark={isDarkTheme} accentColor={accentColor} />
                    <AiButton label="Make List" onClick={() => handleAiAction('LIST')} isDark={isDarkTheme} accentColor={accentColor} />
-                   <AiButton label="Grammar Check" onClick={() => handleAiAction('GRAMMAR')} isDark={isDarkTheme} accentColor={accentColor} />
+                   <AiButton label="Important Look" onClick={() => handleAiAction('IMPORTANT')} isDark={isDarkTheme} accentColor={accentColor} />
                </div>
           </div>
       )}
-
-      {/* --- TOOLBAR --- */}
       <div className={`border-t flex items-center justify-center w-full sticky bottom-0 z-40 ${toolbarBg}`}>
           <div className="flex items-center w-full max-w-3xl px-4 py-4 justify-between">
-              
-              {/* AI Button */}
               {isAiSupportOn && (
-                 <button 
-                   onClick={() => { setIsAiMenuOpen(!isAiMenuOpen); if (isAiMenuOpen) setIsHelpOpen(false); }}
-                   className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors ${isAiMenuOpen ? 'text-black' : ''}`}
-                   style={{ backgroundColor: isAiMenuOpen ? accentColor : 'transparent', color: isAiMenuOpen ? 'black' : accentColor }}
-                 >
+                 <button onClick={() => { setIsAiMenuOpen(!isAiMenuOpen); if (isAiMenuOpen) setIsHelpOpen(false); }} className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors ${isAiMenuOpen ? 'text-black' : ''}`} style={{ backgroundColor: isAiMenuOpen ? accentColor : 'transparent', color: isAiMenuOpen ? 'black' : accentColor }}>
                     <span className="font-bold text-xl font-serif italic">Ai</span>
                  </button>
               )}
-
-              {/* Formatting Tools - Evenly Spaced */}
-              
-              <button 
-                onMouseDown={handleToolbarMouseDown}
-                onClick={() => execCmd('bold')} 
-                className={toolbarBtnClass}
-                style={getBtnStyle(isBoldActive)}
-              >
-                  <span className="font-bold font-serif text-xl">B</span>
-              </button>
-              
-              <button 
-                onMouseDown={handleToolbarMouseDown}
-                onClick={() => execCmd('italic')} 
-                className={toolbarBtnClass}
-                style={getBtnStyle(isItalicActive)}
-              >
-                  <span className="italic font-serif text-xl">I</span>
-              </button>
-              
-              <button 
-                onMouseDown={handleToolbarMouseDown}
-                onClick={() => execCmd('underline')} 
-                className={toolbarBtnClass}
-                style={getBtnStyle(isUnderlineActive)}
-              >
-                  <span className="underline font-serif text-xl">U</span>
-              </button>
-              
-              <button 
-                onMouseDown={handleToolbarMouseDown}
-                onClick={() => execCmd('strikeThrough')} 
-                className={toolbarBtnClass}
-                style={getBtnStyle(isStrikeActive)}
-              >
-                  <span className="line-through font-serif text-xl">S</span>
-              </button>
-
-              <button 
-                  onMouseDown={handleToolbarMouseDown}
-                  onClick={handleChangeCase}
-                  className={toolbarBtnClass}
-                  style={getBtnStyle(false)}
-               >
-                  <span className="font-serif text-xl">Aa</span>
-               </button>
+              <button onMouseDown={handleToolbarMouseDown} onClick={() => execCmd('bold')} className={toolbarBtnClass} style={getBtnStyle(isBoldActive)}><span className="font-bold font-serif text-xl">B</span></button>
+              <button onMouseDown={handleToolbarMouseDown} onClick={() => execCmd('italic')} className={toolbarBtnClass} style={getBtnStyle(isItalicActive)}><span className="italic font-serif text-xl">I</span></button>
+              <button onMouseDown={handleToolbarMouseDown} onClick={() => execCmd('underline')} className={toolbarBtnClass} style={getBtnStyle(isUnderlineActive)}><span className="underline font-serif text-xl">U</span></button>
+              <button onMouseDown={handleToolbarMouseDown} onClick={() => execCmd('strikeThrough')} className={toolbarBtnClass} style={getBtnStyle(isStrikeActive)}><span className="line-through font-serif text-xl">S</span></button>
+              <button onMouseDown={handleToolbarMouseDown} onClick={handleChangeCase} className={toolbarBtnClass} style={getBtnStyle(false)}><span className="font-serif text-xl">Aa</span></button>
           </div>
       </div>
-
-      {/* --- SAVE DIALOG --- */}
       {showSaveDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
               <div className={`border rounded-xl w-full max-w-sm overflow-hidden shadow-2xl ${isDarkTheme ? 'bg-[#121212] border-zinc-700' : 'bg-white border-zinc-400'}`}>
@@ -514,13 +398,7 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
 };
 
 const AiButton: React.FC<{ label: string; onClick: () => void; isDark: boolean; accentColor: string }> = ({ label, onClick, isDark, accentColor }) => (
-    <button 
-        onClick={onClick} 
-        className={`border py-3 px-2 rounded-lg text-sm transition-all ${isDark ? 'border-zinc-800 bg-[#1A1A1A] text-zinc-300 hover:text-white' : 'border-zinc-400 bg-gray-50 text-gray-700 hover:text-black'}`}
-        style={{ borderColor: 'transparent' }}
-        onMouseEnter={(e) => e.currentTarget.style.borderColor = accentColor} 
-        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}
-    >
+    <button onClick={onClick} className={`border py-3 px-2 rounded-lg text-sm transition-all ${isDark ? 'border-zinc-800 bg-[#1A1A1A] text-zinc-300 hover:text-white' : 'border-zinc-400 bg-gray-50 text-gray-700 hover:text-black'}`} style={{ borderColor: 'transparent' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = accentColor} onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}>
         {label}
     </button>
 );

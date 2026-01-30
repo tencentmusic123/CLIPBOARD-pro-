@@ -1,3 +1,5 @@
+import { detectSmartItems } from './SmartRecognition';
+
 /**
  * AI Text Processing Utilities
  * Extracted from EditScreen for better testability
@@ -77,4 +79,43 @@ export const changeCase = (text: string, mode: number): string => {
     case 3: return text.toLowerCase().replace(/(^\s*\w|[\.\!\?]\s*\w)/g, c => c.toUpperCase()); // Sentence case
     default: return text;
   }
+};
+
+/**
+ * Escape HTML characters to prevent broken tags
+ */
+const escapeHtml = (text: string): string => {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+/**
+ * "Important Look": Bolds all detected smart items in the text
+ * Returns HTML string.
+ */
+export const highlightSmartItems = (text: string): string => {
+  const items = detectSmartItems(text);
+  
+  // Sort by length (descending) so we don't replace substrings of longer matches
+  const uniqueValues = Array.from(new Set(items.map(i => i.value)))
+      .sort((a, b) => b.length - a.length);
+
+  // First escape the base text so we don't accidentally create tags from user content
+  let newHtml = escapeHtml(text);
+
+  uniqueValues.forEach(val => {
+      // Escape the value to find it in the already-escaped text
+      const escapedVal = escapeHtml(val);
+      // Escape for Regex (in case it has dots, parens, etc)
+      const regexVal = escapedVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      // Replace with bold tags
+      newHtml = newHtml.replace(new RegExp(regexVal, 'g'), `<b>${escapedVal}</b>`);
+  });
+
+  return newHtml;
 };

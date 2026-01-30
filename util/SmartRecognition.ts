@@ -2,26 +2,50 @@ import { ClipboardType } from '../types';
 
 /**
  * Smart Recognition Utilities
- * Extracted from ReadScreen for better testability
  */
 
 export interface SmartItem {
-  type: 'PHONE' | 'EMAIL' | 'LINK' | 'LOCATION' | 'DATE';
+  type: 'PHONE' | 'EMAIL' | 'LINK' | 'LOCATION' | 'DATE' | 'SECURE';
   value: string;
   label?: string;
 }
 
 /**
  * Detect smart items (phone numbers, emails, links, etc.) from text
- * @param text - The text to analyze
- * @param itemType - Optional clipboard item type for context-specific detection
- * @returns Array of detected smart items (deduplicated)
  */
 export const detectSmartItems = (text: string, itemType?: ClipboardType): SmartItem[] => {
   const items: SmartItem[] = [];
-  const seen = new Set<string>(); // Track seen values to avoid duplicates
+  const seen = new Set<string>();
 
-  // Phone number detection
+  // 1. Credit Card-like patterns (13-19 digits)
+  const ccRegex = /\b(?:\d[ -]*?){13,19}\b/g;
+  const ccMatches = text.match(ccRegex);
+  if (ccMatches) {
+    ccMatches.forEach(m => {
+      const clean = m.replace(/\D/g, '');
+      if (clean.length >= 13 && clean.length <= 19) {
+         if (!seen.has(m)) {
+           items.push({ type: 'SECURE', value: m, label: 'Sensitive' });
+           seen.add(m);
+         }
+      }
+    });
+  }
+
+  // 2. Sensitive Keywords
+  // Matches: "password: 123", "password = 123", "password is 123"
+  const keywordRegex = /\b(password|passwd|pin|secret|token|api[_\-]?key|access[_\-]?token|auth[_\-]?token|verification[_\-]?code|otp|client[_\-]?secret)\s*(:|is|=)\s*\S+/gi;
+  const keywordMatches = text.match(keywordRegex);
+  if (keywordMatches) {
+    keywordMatches.forEach(m => {
+       if (!seen.has(m)) {
+         items.push({ type: 'SECURE', value: m, label: 'Sensitive' });
+         seen.add(m);
+       }
+    });
+  }
+
+  // Phone number
   const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
   const phones = text.match(phoneRegex);
   if (phones) phones.forEach(p => {
@@ -31,7 +55,7 @@ export const detectSmartItems = (text: string, itemType?: ClipboardType): SmartI
     }
   });
 
-  // Email detection
+  // Email
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
   const emails = text.match(emailRegex);
   if (emails) emails.forEach(e => {
@@ -41,7 +65,7 @@ export const detectSmartItems = (text: string, itemType?: ClipboardType): SmartI
     }
   });
 
-  // URL/Link detection
+  // URL/Link
   const linkRegex = /https?:\/\/[^\s]+/g;
   const links = text.match(linkRegex);
   if (links) links.forEach(l => {
@@ -51,13 +75,10 @@ export const detectSmartItems = (text: string, itemType?: ClipboardType): SmartI
     }
   });
 
-  // Coordinate detection (various formats)
+  // Coordinates
   const coordinatePatterns = [
-    // Decimal degrees with direction: 12.3039°N 76.6547°E or 12.3039°N, 76.6547°E
     /[-+]?\d+\.?\d*°?\s*[NS]\s*,?\s*[-+]?\d+\.?\d*°?\s*[EW]/gi,
-    // Decimal degrees: 12.3039, 76.6547 or (12.3039, 76.6547)
     /\(?\s*[-+]?\d+\.\d+\s*,\s*[-+]?\d+\.\d+\s*\)?/g,
-    // Degrees Minutes Seconds: 40°26'46"N 79°58'56"W
     /\d+°\d+'[\d."]+"?\s*[NS]\s*,?\s*\d+°\d+'[\d."]+"?\s*[EW]/gi,
   ];
   
@@ -73,7 +94,7 @@ export const detectSmartItems = (text: string, itemType?: ClipboardType): SmartI
     }
   }
 
-  // Location detection (based on keywords or type)
+  // Location Keywords
   const locationKeywords = [
     'Street', 'St', 'Avenue', 'Ave', 'Road', 'Rd', 'Boulevard', 'Blvd',
     'Lane', 'Ln', 'Drive', 'Dr', 'Court', 'Ct', 'Place', 'Pl',
@@ -94,18 +115,12 @@ export const detectSmartItems = (text: string, itemType?: ClipboardType): SmartI
     }
   }
   
-  // Fallback based on item type
+  // Fallbacks
   if (itemType === ClipboardType.PHONE && items.length === 0) {
-    if (!seen.has(text)) {
-      items.push({ type: 'PHONE', value: text, label: 'Call' });
-      seen.add(text);
-    }
+    if (!seen.has(text)) items.push({ type: 'PHONE', value: text, label: 'Call' });
   }
   if (itemType === ClipboardType.LINK && items.length === 0) {
-    if (!seen.has(text)) {
-      items.push({ type: 'LINK', value: text, label: 'Open' });
-      seen.add(text);
-    }
+    if (!seen.has(text)) items.push({ type: 'LINK', value: text, label: 'Open' });
   }
 
   return items;
@@ -113,8 +128,6 @@ export const detectSmartItems = (text: string, itemType?: ClipboardType): SmartI
 
 /**
  * Detect the primary clipboard type from content using smart recognition
- * @param text - The text to analyze
- * @returns The detected ClipboardType (first detected type, or TEXT as default)
  */
 export const detectPrimaryType = (text: string): ClipboardType => {
   const smartItems = detectSmartItems(text);
@@ -123,18 +136,25 @@ export const detectPrimaryType = (text: string): ClipboardType => {
     return ClipboardType.TEXT;
   }
 
-  // Map first detected smart item type to ClipboardType
+  // Priority: SECURE > PHONE/EMAIL/LINK/LOCATION
+  if (smartItems.some(i => i.type === 'SECURE')) {
+    return ClipboardType.SECURE;
+  }
+
   const firstDetectedType = smartItems[0].type;
   switch (firstDetectedType) {
-    case 'PHONE':
-      return ClipboardType.PHONE;
-    case 'EMAIL':
-      return ClipboardType.EMAIL;
-    case 'LINK':
-      return ClipboardType.LINK;
-    case 'LOCATION':
-      return ClipboardType.LOCATION;
-    default:
-      return ClipboardType.TEXT;
+    case 'PHONE': return ClipboardType.PHONE;
+    case 'EMAIL': return ClipboardType.EMAIL;
+    case 'LINK': return ClipboardType.LINK;
+    case 'LOCATION': return ClipboardType.LOCATION;
+    default: return ClipboardType.TEXT;
   }
+};
+
+/**
+ * Mask sensitive content (last 6 characters)
+ */
+export const maskContent = (text: string): string => {
+  if (text.length <= 6) return '******';
+  return text.slice(0, -6) + '******';
 };

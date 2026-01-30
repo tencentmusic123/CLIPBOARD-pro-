@@ -14,7 +14,7 @@ import { ScreenName, ClipboardItem, ClipboardType } from './types';
 import { clipboardRepository } from './data/repository/ClipboardRepository';
 import { Clipboard } from '@capacitor/clipboard';
 import { App as CapApp } from '@capacitor/app';
-import { detectSmartItems } from './util/SmartRecognition';
+import { detectPrimaryType, maskContent } from './util/SmartRecognition';
 import { Preferences } from '@capacitor/preferences';
 
 const AppContent: React.FC = () => {
@@ -45,31 +45,13 @@ const AppContent: React.FC = () => {
            const trashedItems = latestItems.filter(i => i.isDeleted);
            if (trashedItems.some(i => i.content === text)) return;
            
-           let detectedType = ClipboardType.TEXT;
-           const smartItems = detectSmartItems(text);
-           if (smartItems.length > 0) {
-             const firstDetectedType = smartItems[0].type;
-             switch (firstDetectedType) {
-               case 'PHONE':
-                 detectedType = ClipboardType.PHONE;
-                 break;
-               case 'EMAIL':
-                 detectedType = ClipboardType.EMAIL;
-                 break;
-               case 'LINK':
-                 detectedType = ClipboardType.LINK;
-                 break;
-               case 'LOCATION':
-                 detectedType = ClipboardType.LOCATION;
-                 break;
-               default:
-                 detectedType = ClipboardType.TEXT;
-             }
-           }
+           const detectedType = detectPrimaryType(text);
+           const displayContent = detectedType === ClipboardType.SECURE ? maskContent(text) : undefined;
            
            await clipboardRepository.addItem({
                id: Date.now().toString(),
                content: text,
+               displayContent: displayContent,
                type: detectedType,
                category: 'clipboard',
                timestamp: new Date().toLocaleString(),
