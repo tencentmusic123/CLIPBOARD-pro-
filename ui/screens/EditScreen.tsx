@@ -381,8 +381,14 @@ const EditScreen: React.FC<EditScreenProps> = ({ item, isNew, onBack, onSave }) 
           </div>
       </div>
       {showSaveDialog && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-              <div className={`border rounded-xl w-full max-w-sm overflow-hidden shadow-2xl ${isDarkTheme ? 'bg-[#121212] border-zinc-700' : 'bg-white border-zinc-400'}`}>
+          <div 
+            onClick={() => setShowSaveDialog(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4"
+          >
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className={`border rounded-xl w-full max-w-sm overflow-hidden shadow-2xl ${isDarkTheme ? 'bg-[#121212] border-zinc-700' : 'bg-white border-zinc-400'}`}
+              >
                   <div className={`p-6 text-center border-b ${isDarkTheme ? 'border-zinc-800 text-white' : 'border-zinc-400 text-black'}`}>
                       <h3 className="text-xl font-light">Save to :</h3>
                   </div>
