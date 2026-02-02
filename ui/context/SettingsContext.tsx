@@ -16,6 +16,10 @@ interface SettingsContextType {
   clipboardSyncEnabled: boolean;
   setClipboardSyncEnabled: (enabled: boolean) => void;
 
+  // Background monitoring with Accessibility Service
+  backgroundMonitoringEnabled: boolean;
+  setBackgroundMonitoringEnabled: (enabled: boolean) => void;
+
   autoBackupFrequency: string;
   setAutoBackupFrequency: (freq: string) => void;
   backupDestination: string;
@@ -33,6 +37,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [isAiSupportOn, setIsAiSupportOn] = useState(true);
   
   const [clipboardSyncEnabled, setClipboardSyncEnabledState] = useState(false);
+  const [backgroundMonitoringEnabled, setBackgroundMonitoringEnabledState] = useState(false);
 
   const [autoBackupFrequency, setAutoBackupFrequencyState] = useState('Off');
   const [backupDestination, setBackupDestinationState] = useState('Google');
@@ -61,6 +66,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     
     const storedBackupDest = localStorage.getItem('backup_destination');
     if (storedBackupDest) setBackupDestinationState(storedBackupDest);
+    
+    const storedBgMonitoring = localStorage.getItem('background_monitoring_enabled');
+    if (storedBgMonitoring) setBackgroundMonitoringEnabledState(JSON.parse(storedBgMonitoring));
   }, []);
 
   useEffect(() => {
@@ -121,6 +129,11 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       localStorage.setItem('backup_destination', dest);
   };
 
+  const setBackgroundMonitoringEnabled = (enabled: boolean) => {
+      setBackgroundMonitoringEnabledState(enabled);
+      localStorage.setItem('background_monitoring_enabled', JSON.stringify(enabled));
+  };
+
   const isDarkTheme = themeMode === 'DARK' || (themeMode === 'SYSTEM' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   return (
@@ -137,6 +150,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       toggleAiSupport,
       clipboardSyncEnabled,
       setClipboardSyncEnabled,
+      backgroundMonitoringEnabled,
+      setBackgroundMonitoringEnabled,
       autoBackupFrequency,
       setAutoBackupFrequency,
       backupDestination,

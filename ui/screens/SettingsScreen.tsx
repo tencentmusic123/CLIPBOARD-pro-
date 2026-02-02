@@ -1,6 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
+import { Capacitor } from '@capacitor/core';
+import { ClipboardMonitor } from '../../util/plugins/ClipboardMonitor';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -14,6 +16,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
     readingFontSize, setReadingFontSize,
     isSmartRecognitionOn, toggleSmartRecognition,
     isAiSupportOn, toggleAiSupport,
+    backgroundMonitoringEnabled, setBackgroundMonitoringEnabled,
     autoBackupFrequency, setAutoBackupFrequency,
     backupDestination, setBackupDestination
   } = useSettings();
@@ -23,6 +26,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   const [showBackupDest, setShowBackupDest] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
+  
+  // Accessibility Service State
+  const [isAccessibilityEnabled, setIsAccessibilityEnabled] = useState(false);
+  const [isServiceConnected, setIsServiceConnected] = useState(false);
   
   // Backup/Restore States
   const [isBackingUp, setIsBackingUp] = useState(false);
@@ -35,10 +42,64 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   // --- Refs for Click Outside Logic ---
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Check accessibility status on mount and when app becomes visible
+  useEffect(() => {
+    const checkAccessibilityStatus = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const status = await ClipboardMonitor.isAccessibilityEnabled();
+          setIsAccessibilityEnabled(status.enabled);
+          setIsServiceConnected(status.serviceConnected);
+          if (status.enabled) {
+            setBackgroundMonitoringEnabled(true);
+          }
+        } catch (e) {
+          console.warn('Error checking accessibility status:', e);
+        }
+      }
+    };
+    
+    checkAccessibilityStatus();
+    
+    // Check again when app becomes visible (user might have enabled it in settings)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAccessibilityStatus();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [setBackgroundMonitoringEnabled]);
+
   // --- Helpers ---
   const showToast = (msg: string) => {
       setToastMessage(msg);
       setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleAccessibilityToggle = async () => {
+    if (Capacitor.isNativePlatform()) {
+      if (!isAccessibilityEnabled) {
+        // Open accessibility settings to enable service
+        try {
+          await ClipboardMonitor.openAccessibilitySettings();
+          showToast('Enable Clipboard Max in Accessibility settings');
+        } catch (e) {
+          showToast('Could not open Accessibility settings');
+        }
+      } else {
+        // Service is enabled, direct to settings to disable
+        try {
+          await ClipboardMonitor.openAccessibilitySettings();
+          showToast('Disable Clipboard Max in Accessibility settings to stop monitoring');
+        } catch (e) {
+          showToast('Could not open Accessibility settings');
+        }
+      }
+    } else {
+      showToast('Background monitoring is only available on Android');
+    }
   };
 
   const handleFeedbackSubmit = () => {
@@ -228,6 +289,42 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                 isDarkTheme={isDarkTheme}
                 className="rounded-b-2xl"
               />
+          </div>
+
+          {/* --- BACKGROUND MONITORING --- */}
+          <h3 className={sectionTitleClass}>Background Monitoring</h3>
+          <div className={cardClass}>
+              <div className={`${itemClass} rounded-2xl`}>
+                 <div className="flex items-center space-x-3">
+                    <div className={`p-1.5 rounded-lg ${isDarkTheme ? 'bg-zinc-800 text-white' : 'bg-gray-100 text-black'}`}>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-base font-medium">Accessibility Service</span>
+                        <span className={`text-xs ${isDarkTheme ? 'text-zinc-500' : 'text-gray-500'}`}>
+                            {isAccessibilityEnabled 
+                                ? (isServiceConnected ? 'Active - Monitoring clipboard' : 'Enabled - Waiting for connection') 
+                                : 'Disabled - Tap to enable'}
+                        </span>
+                    </div>
+                 </div>
+                 <button 
+                    onClick={handleAccessibilityToggle}
+                    className={`w-11 h-6 rounded-full relative transition-colors duration-200 focus:outline-none`}
+                    style={{ backgroundColor: isAccessibilityEnabled ? accentColor : (isDarkTheme ? '#333' : '#e5e7eb') }}
+                 >
+                    <div 
+                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 shadow-sm ${isAccessibilityEnabled ? 'left-6' : 'left-1'}`}
+                    />
+                 </button>
+              </div>
+              {!Capacitor.isNativePlatform() && (
+                  <div className={`px-4 py-2 text-xs ${isDarkTheme ? 'text-zinc-500' : 'text-gray-500'}`}>
+                      Background monitoring requires the Android app. Build the APK to use this feature.
+                  </div>
+              )}
           </div>
 
           {/* --- BACKUP & DATA --- */}
