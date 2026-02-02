@@ -131,13 +131,34 @@ class ClipboardRepository {
 
   async addItem(item: ClipboardItem): Promise<void> {
     await this.initPromise;
-    const duplicate = this.items.find(
-      i => !i.isDeleted && 
-           i.category === item.category && 
-           i.content === item.content
-    );
     
-    if (duplicate) return;
+    // Check if an item with the same ID already exists (prevents duplicate events)
+    const existingById = this.items.find(i => i.id === item.id);
+    if (existingById) return;
+    
+    // For clipboard items, check if the most recent non-deleted item has the same content
+    // This prevents rapid duplicate additions while still allowing the same content later
+    if (item.category === 'clipboard') {
+      const recentClipboard = this.items.find(
+        i => !i.isDeleted && i.category === 'clipboard'
+      );
+      if (recentClipboard && recentClipboard.content === item.content) {
+        // Only skip if the timestamps are very close (within 2 seconds)
+        const recentTime = new Date(recentClipboard.timestamp).getTime();
+        const itemTime = new Date(item.timestamp).getTime();
+        if (!isNaN(recentTime) && !isNaN(itemTime) && Math.abs(itemTime - recentTime) < 2000) {
+          return;
+        }
+      }
+    } else {
+      // For notes, use the existing duplicate check (exact content match)
+      const duplicate = this.items.find(
+        i => !i.isDeleted && 
+             i.category === item.category && 
+             i.content === item.content
+      );
+      if (duplicate) return;
+    }
     
     this.items = [item, ...this.items];
     item.tags.forEach(t => this.knownTags.add(t));

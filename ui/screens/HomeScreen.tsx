@@ -188,7 +188,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
     }
   }, []);
 
-  // Sync pending clips from background service on mount and visibility change
+  // Sync pending clips from background service on mount, visibility change, and periodically
   useEffect(() => {
     const syncPendingClips = async () => {
       if (!Capacitor.isNativePlatform()) return;
@@ -226,7 +226,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Periodic sync every 5 seconds while the app is in foreground
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncPendingClips();
+      }
+    }, 5000);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(intervalId);
+    };
   }, [addClipFromBackground]);
 
   // Listen for real-time clipboard changes from background service
