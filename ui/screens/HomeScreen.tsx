@@ -13,6 +13,9 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { ClipboardMonitor, ClipboardChangedEvent, PendingClip } from '../../util/plugins/ClipboardMonitor';
 
+// Interval in milliseconds for periodic clipboard sync from background service
+const CLIPBOARD_SYNC_INTERVAL_MS = 5000;
+
 interface HomeScreenProps {
     onNavigate: (screen: ScreenName) => void;
     onRead?: (item: ClipboardItem) => void;
@@ -227,12 +230,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Periodic sync every 5 seconds while the app is in foreground
+    // Periodic sync while the app is in foreground
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible') {
         syncPendingClips();
       }
-    }, 5000);
+    }, CLIPBOARD_SYNC_INTERVAL_MS);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);

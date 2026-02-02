@@ -4,6 +4,8 @@ import { Preferences } from '@capacitor/preferences';
 
 const STORAGE_KEY = 'clipboard_max_data';
 const TAGS_KEY = 'clipboard_max_tags';
+// Minimum interval in milliseconds to allow the same clipboard content to be added again
+const DUPLICATE_DETECTION_INTERVAL_MS = 2000;
 
 class ClipboardRepository {
   private items: ClipboardItem[] = [];
@@ -143,10 +145,10 @@ class ClipboardRepository {
         i => !i.isDeleted && i.category === 'clipboard'
       );
       if (recentClipboard && recentClipboard.content === item.content) {
-        // Only skip if the timestamps are very close (within 2 seconds)
+        // Only skip if the timestamps are very close (within the duplicate interval)
         const recentTime = new Date(recentClipboard.timestamp).getTime();
         const itemTime = new Date(item.timestamp).getTime();
-        if (!isNaN(recentTime) && !isNaN(itemTime) && Math.abs(itemTime - recentTime) < 2000) {
+        if (!isNaN(recentTime) && !isNaN(itemTime) && Math.abs(itemTime - recentTime) < DUPLICATE_DETECTION_INTERVAL_MS) {
           return;
         }
       }
