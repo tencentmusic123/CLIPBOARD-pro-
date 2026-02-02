@@ -25,10 +25,15 @@ public class ClipboardAccessibilityService extends AccessibilityService {
     private static final String TAG = "ClipboardAccessibility";
     private static final String PREFS_NAME = "clipboard_monitor_prefs";
     private static final String CLIPS_KEY = "pending_clips";
+    private static final String LAST_CLIP_CONTENT_KEY = "last_clip_content";
+    private static final String LAST_CLIP_TIME_KEY = "last_clip_time";
     private static final int MAX_PENDING_CLIPS = 100;
+    // Minimum interval in milliseconds to allow the same content to be captured again
+    private static final long MIN_DUPLICATE_INTERVAL_MS = 2000;
 
     private ClipboardManager clipboardManager;
     private String lastClipContent = "";
+    private long lastClipTime = 0;
 
     @Override
     public void onCreate() {
@@ -49,6 +54,11 @@ public class ClipboardAccessibilityService extends AccessibilityService {
         info.flags = AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         
         setServiceInfo(info);
+
+        // Load persisted last clip data to prevent duplicates after service restart
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        lastClipContent = prefs.getString(LAST_CLIP_CONTENT_KEY, "");
+        lastClipTime = prefs.getLong(LAST_CLIP_TIME_KEY, 0);
 
         // Initialize clipboard manager
         clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -104,13 +114,25 @@ public class ClipboardAccessibilityService extends AccessibilityService {
             }
 
             String content = text.toString().trim();
+            long currentTime = System.currentTimeMillis();
             
-            // Skip if same as last clip
-            if (content.equals(lastClipContent)) {
+            // Skip if same as last clip AND within the minimum duplicate interval
+            // This allows the same content to be captured again if enough time has passed
+            // (e.g., user intentionally copies the same text again)
+            if (content.equals(lastClipContent) && 
+                (currentTime - lastClipTime) < MIN_DUPLICATE_INTERVAL_MS) {
                 return;
             }
             
             lastClipContent = content;
+            lastClipTime = currentTime;
+            
+            // Persist the last clip data for service restarts
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit()
+                .putString(LAST_CLIP_CONTENT_KEY, content)
+                .putLong(LAST_CLIP_TIME_KEY, currentTime)
+                .apply();
             
             // Store the clip for later retrieval
             storeClip(content);

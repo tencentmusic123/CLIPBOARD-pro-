@@ -4,6 +4,8 @@ import { Preferences } from '@capacitor/preferences';
 
 const STORAGE_KEY = 'clipboard_max_data';
 const TAGS_KEY = 'clipboard_max_tags';
+// Minimum interval in milliseconds to allow the same clipboard content to be added again
+const DUPLICATE_DETECTION_INTERVAL_MS = 2000;
 
 class ClipboardRepository {
   private items: ClipboardItem[] = [];
@@ -131,13 +133,34 @@ class ClipboardRepository {
 
   async addItem(item: ClipboardItem): Promise<void> {
     await this.initPromise;
-    const duplicate = this.items.find(
-      i => !i.isDeleted && 
-           i.category === item.category && 
-           i.content === item.content
-    );
     
-    if (duplicate) return;
+    // Check if an item with the same ID already exists (prevents duplicate events)
+    const existingById = this.items.find(i => i.id === item.id);
+    if (existingById) return;
+    
+    // For clipboard items, check if the most recent non-deleted item has the same content
+    // This prevents rapid duplicate additions while still allowing the same content later
+    if (item.category === 'clipboard') {
+      const recentClipboard = this.items.find(
+        i => !i.isDeleted && i.category === 'clipboard'
+      );
+      if (recentClipboard && recentClipboard.content === item.content) {
+        // Only skip if the timestamps are very close (within the duplicate interval)
+        const recentTime = new Date(recentClipboard.timestamp).getTime();
+        const itemTime = new Date(item.timestamp).getTime();
+        if (!isNaN(recentTime) && !isNaN(itemTime) && Math.abs(itemTime - recentTime) < DUPLICATE_DETECTION_INTERVAL_MS) {
+          return;
+        }
+      }
+    } else {
+      // For notes, use the existing duplicate check (exact content match)
+      const duplicate = this.items.find(
+        i => !i.isDeleted && 
+             i.category === item.category && 
+             i.content === item.content
+      );
+      if (duplicate) return;
+    }
     
     this.items = [item, ...this.items];
     item.tags.forEach(t => this.knownTags.add(t));
