@@ -16,6 +16,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { App as CapApp } from '@capacitor/app';
 import { detectPrimaryType, maskContent } from './util/SmartRecognition';
 import { Preferences } from '@capacitor/preferences';
+import { ClipboardMonitor } from './util/plugins/ClipboardMonitor';
 
 const AppContent: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('SPLASH');
@@ -27,6 +28,64 @@ const AppContent: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [isNewItem, setIsNewItem] = useState(false);
   const { isDarkTheme } = useSettings();
+
+  // Sync clips captured by the background service
+  const syncBackgroundClips = async () => {
+    try {
+      const { clips } = await ClipboardMonitor.getPendingClips();
+      
+      if (!clips || clips.length === 0) return;
+
+      const syncedIds: string[] = [];
+
+      for (const clip of clips) {
+        const detectedType = detectPrimaryType(clip.content);
+        const displayContent = detectedType === ClipboardType.SECURE ? maskContent(clip.content) : undefined;
+        
+        const newItem: ClipboardItem = {
+          id: clip.id,
+          content: clip.content,
+          displayContent: displayContent,
+          timestamp: new Date(clip.timestamp).toLocaleString(),
+          type: detectedType,
+          category: 'clipboard',
+          tags: ['#auto'],
+          isPinned: false,
+          isFavorite: false,
+          isDeleted: false
+        };
+
+        await clipboardRepository.addItem(newItem);
+        syncedIds.push(clip.id);
+      }
+
+      // Cleanup: mark as synced and clear
+      if (syncedIds.length > 0) {
+        await ClipboardMonitor.markClipsAsSynced({ ids: syncedIds });
+        await ClipboardMonitor.clearPendingClips();
+      }
+    } catch (e) {
+      console.warn("Background clip sync failed", e);
+    }
+  };
+
+  // Run sync on mount
+  useEffect(() => {
+    syncBackgroundClips();
+  }, []);
+
+  // Run sync when app resumes from background
+  useEffect(() => {
+    const handleAppStateChange = CapApp.addListener('appStateChange', (state) => {
+      if (state.isActive) {
+        syncBackgroundClips();
+      }
+    });
+
+    return () => {
+      handleAppStateChange.then(listener => listener.remove());
+    };
+  }, []);
 
   useEffect(() => {
     const performStartupSync = async () => {
