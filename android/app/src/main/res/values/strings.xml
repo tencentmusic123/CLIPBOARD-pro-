@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Clipboard Max</string>
+    <string name="title_activity_main">Clipboard Max</string>
+    <string name="package_name">com.clipboardmax.fresh</string>
+    <string name="custom_url_scheme">com.clipboardmax.fresh</string>
+    <string name="accessibility_service_description">Clipboard Max uses this accessibility service to monitor your clipboard in the background. This allows the app to automatically capture and organize text you copy from any app, even when Clipboard Max is not open. Your clipboard data stays on your device and is never shared.</string>
+</resources>

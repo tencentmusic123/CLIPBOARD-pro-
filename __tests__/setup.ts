@@ -31,6 +31,21 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock
 });
 
+// Mock window.matchMedia for theme detection
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: query === '(prefers-color-scheme: dark)',
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
 // Mock navigator.clipboard (for web compatibility)
 Object.defineProperty(navigator, 'clipboard', {
   value: {
@@ -54,6 +69,21 @@ vi.mock('@capacitor/app', () => ({
     addListener: vi.fn(() => Promise.resolve({ remove: vi.fn() })),
     exitApp: vi.fn(() => Promise.resolve())
   }
+}));
+
+// Mock Capacitor Core
+vi.mock('@capacitor/core', () => ({
+  Capacitor: {
+    isNativePlatform: vi.fn(() => false),
+    getPlatform: vi.fn(() => 'web')
+  },
+  registerPlugin: vi.fn((name: string, options?: any) => {
+    // Return web implementation if provided
+    if (options?.web) {
+      return options.web();
+    }
+    return {};
+  })
 }));
 
 // Cleanup after each test

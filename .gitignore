@@ -27,9 +27,17 @@ coverage
 *.sw?
 
 # Capacitor
-android/
 ios/
 .capacitor/
+
+# Android build outputs (but keep source code)
+android/.gradle/
+android/app/build/
+android/build/
+android/capacitor-cordova-android-plugins/build/
+android/local.properties
+android/.idea/
+android/app/.cxx/
 
 # Keep configuration
 !capacitor.config.ts

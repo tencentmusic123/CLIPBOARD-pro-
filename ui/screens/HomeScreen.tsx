@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import GoldCard from '../components/GoldCard';
 import BottomNav from '../components/BottomNav';
 import SideBar from '../components/SideBar';
@@ -11,6 +11,7 @@ import { detectSmartItems, detectPrimaryType, maskContent } from '../../util/Sma
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
+import { ClipboardMonitor, ClipboardChangedEvent, PendingClip } from '../../util/plugins/ClipboardMonitor';
 
 interface HomeScreenProps {
     onNavigate: (screen: ScreenName) => void;
@@ -28,7 +29,7 @@ interface FilterState {
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew, activeTab, onTabChange }) => {
-  const { accentColor, isDarkTheme, clipboardSyncEnabled, setClipboardSyncEnabled } = useSettings();
+  const { accentColor, isDarkTheme, clipboardSyncEnabled, setClipboardSyncEnabled, backgroundMonitoringEnabled } = useSettings();
 
   // --- STATE: Data & Navigation ---
   const [items, setItems] = useState<ClipboardItem[]>([]);
@@ -149,6 +150,110 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       setToastMessage(msg);
       setTimeout(() => setToastMessage(null), 3000);
   };
+
+  // --- BACKGROUND MONITORING (Accessibility Service) ---
+  // Helper function to add a clip from background service
+  const addClipFromBackground = useCallback(async (content: string, clipId?: string) => {
+    try {
+      const latestItems = await clipboardRepository.getAllItems('DATE', 'DESC');
+      
+      // Check for duplicates
+      const isDuplicate = latestItems.some(i => i.content === content && !i.isDeleted);
+      if (isDuplicate) return;
+      
+      // Check if in trash
+      const inTrash = latestItems.some(i => i.content === content && i.isDeleted);
+      if (inTrash) return;
+      
+      const detectedType = detectPrimaryType(content);
+      const displayContent = detectedType === ClipboardType.SECURE ? maskContent(content) : undefined;
+      
+      const newItem: ClipboardItem = {
+        id: clipId || Date.now().toString(),
+        content: content,
+        displayContent: displayContent,
+        type: detectedType,
+        category: 'clipboard',
+        timestamp: new Date().toLocaleString(),
+        tags: ['#background'],
+        isPinned: false,
+        isFavorite: false,
+        isDeleted: false
+      };
+      
+      await clipboardRepository.addItem(newItem);
+      await fetchData();
+    } catch (err) {
+      console.warn('Error adding clip from background:', err);
+    }
+  }, []);
+
+  // Sync pending clips from background service on mount and visibility change
+  useEffect(() => {
+    const syncPendingClips = async () => {
+      if (!Capacitor.isNativePlatform()) return;
+      
+      try {
+        const { clips } = await ClipboardMonitor.getPendingClips();
+        if (clips && clips.length > 0) {
+          const syncedIds: string[] = [];
+          
+          for (const clip of clips) {
+            if (!clip.synced) {
+              await addClipFromBackground(clip.content, clip.id);
+              syncedIds.push(clip.id);
+            }
+          }
+          
+          if (syncedIds.length > 0) {
+            await ClipboardMonitor.markClipsAsSynced({ ids: syncedIds });
+            showToast(`Synced ${syncedIds.length} clip${syncedIds.length > 1 ? 's' : ''} from background`);
+          }
+        }
+      } catch (err) {
+        console.warn('Error syncing pending clips:', err);
+      }
+    };
+    
+    // Sync on mount
+    syncPendingClips();
+    
+    // Sync when app becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncPendingClips();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [addClipFromBackground]);
+
+  // Listen for real-time clipboard changes from background service
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    
+    let listenerHandle: { remove: () => Promise<void> } | null = null;
+    
+    const setupListener = async () => {
+      try {
+        listenerHandle = await ClipboardMonitor.addListener('clipboardChanged', async (event: ClipboardChangedEvent) => {
+          await addClipFromBackground(event.content, event.id);
+          showToast('New clip captured');
+        });
+      } catch (err) {
+        console.warn('Error setting up clipboard listener:', err);
+      }
+    };
+    
+    setupListener();
+    
+    return () => {
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
+    };
+  }, [addClipFromBackground]);
 
   // --- ANIMATION & TAB LOGIC ---
   useEffect(() => {
