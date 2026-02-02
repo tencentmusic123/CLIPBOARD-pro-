@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { ClipboardItem, ClipboardType } from '../../types';
 import GoldCard from '../components/GoldCard';
-import JSZip from 'jszip';
 import { useSettings } from '../context/SettingsContext';
 import { Clipboard } from '@capacitor/clipboard';
 
@@ -149,46 +148,6 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
         alert("Copied to clipboard for sharing");
     }
     exitSelectionMode();
-  };
-
-  const handleExport = async () => {
-      const selectedItems = filteredItems.filter(i => selectedIds.has(i.id));
-      if (selectedItems.length === 0) return;
-
-      if (selectedItems.length === 1) {
-          // Single export
-          const item = selectedItems[0];
-          const filename = (item.title ? item.title.replace(/[^a-z0-9_\-\. ]/gi, '') : `Clip`) + '.txt';
-          const blob = new Blob([item.content], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-      } else {
-          // ZIP export
-          const zip = new JSZip();
-          selectedItems.forEach((item, index) => {
-              const safeTitle = item.title ? item.title.replace(/[^a-z0-9_\-\. ]/gi, '') : `Clip`;
-              const filename = `${safeTitle}_${index + 1}.txt`;
-              zip.file(filename, item.content);
-          });
-
-          const content = await zip.generateAsync({ type: 'blob' });
-          const url = URL.createObjectURL(content);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `Favorites_Export_${Date.now()}.zip`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-      }
-      
-      exitSelectionMode();
   };
 
   const handleCopyToNotes = () => {
@@ -351,7 +310,6 @@ const FavoriteScreen: React.FC<FavoriteScreenProps> = ({ onBack, onRead }) => {
               <div className={`border rounded-xl overflow-hidden shadow-2xl flex flex-col backdrop-blur-xl ${overlayBg}`} style={{ borderColor: accentColor }}>
                   <MenuItem label="Merge" onClick={handleMerge} textColor={textColor} />
                   <MenuItem label="Share" onClick={handleShare} textColor={textColor} />
-                  <MenuItem label="Export" onClick={handleExport} textColor={textColor} />
                   <MenuItem label="Copy to Notes" onClick={handleCopyToNotes} textColor={textColor} />
                   <MenuItem label="Print" onClick={handlePrint} textColor={textColor} />
                   <MenuItem label="Add #Tag" onClick={handleAddHashtagStart} textColor={textColor} />
