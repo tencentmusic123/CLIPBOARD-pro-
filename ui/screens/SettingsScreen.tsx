@@ -305,8 +305,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                         <span className="text-base font-medium">Accessibility Service</span>
                         <span className={`text-xs ${isDarkTheme ? 'text-zinc-500' : 'text-gray-500'}`}>
                             {isAccessibilityEnabled 
-                                ? (isServiceConnected ? 'Active - Monitoring clipboard' : 'Enabled - Waiting for connection') 
-                                : 'Disabled - Tap to enable'}
+                                ? (isServiceConnected ? 'Active — Monitoring clipboard' : 'Enabled — Connecting...') 
+                                : 'Disabled — Tap to enable'}
                         </span>
                     </div>
                  </div>
