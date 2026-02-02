@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SettingsProvider, useSettings } from './ui/context/SettingsContext';
 import { AuthProvider } from './ui/context/AuthContext';
 import SplashScreen from './ui/screens/SplashScreen';
@@ -30,7 +30,7 @@ const AppContent: React.FC = () => {
   const { isDarkTheme } = useSettings();
 
   // Sync clips captured by the background service
-  const syncBackgroundClips = async () => {
+  const syncBackgroundClips = useCallback(async () => {
     try {
       const { clips } = await ClipboardMonitor.getPendingClips();
       
@@ -67,12 +67,12 @@ const AppContent: React.FC = () => {
     } catch (e) {
       console.warn("Background clip sync failed", e);
     }
-  };
+  }, []);
 
   // Run sync on mount
   useEffect(() => {
     syncBackgroundClips();
-  }, []);
+  }, [syncBackgroundClips]);
 
   // Run sync when app resumes from background
   useEffect(() => {
@@ -85,7 +85,7 @@ const AppContent: React.FC = () => {
     return () => {
       handleAppStateChange.then(listener => listener.remove());
     };
-  }, []);
+  }, [syncBackgroundClips]);
 
   useEffect(() => {
     const performStartupSync = async () => {
