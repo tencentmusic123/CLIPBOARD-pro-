@@ -137,7 +137,6 @@ const TagDetailScreen: React.FC<TagDetailScreenProps> = ({ tag, onBack, onRead }
                             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                              {showMoreOptions && (
                                  <div className={`absolute right-0 top-8 border rounded-lg w-32 shadow-xl z-50 py-1 backdrop-blur-xl ${overlayBg}`} style={{ borderColor: accentColor }}>
-                                     <div className={`px-4 py-2 text-sm text-left cursor-pointer ${isDarkTheme ? 'hover:bg-black text-white' : 'hover:bg-gray-100 text-black'}`}>Export</div>
                                      <div className={`px-4 py-2 text-sm text-left cursor-pointer ${isDarkTheme ? 'hover:bg-black text-white' : 'hover:bg-gray-100 text-black'}`}>Merge</div>
                                  </div>
                              )}

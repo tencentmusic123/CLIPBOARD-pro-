@@ -10,6 +10,8 @@ import EditScreen from './ui/screens/EditScreen';
 import TagsScreen from './ui/screens/TagsScreen';
 import TagDetailScreen from './ui/screens/TagDetailScreen';
 import SettingsScreen from './ui/screens/SettingsScreen';
+import PrivacyPolicyOverlay, { usePrivacyPolicyStatus } from './ui/components/PrivacyPolicyOverlay';
+import StartIOBannerAd from './ui/components/StartIOBannerAd';
 import { ScreenName, ClipboardItem, ClipboardType } from './types';
 import { clipboardRepository } from './data/repository/ClipboardRepository';
 import { Clipboard } from '@capacitor/clipboard';
@@ -28,6 +30,9 @@ const AppContent: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [isNewItem, setIsNewItem] = useState(false);
   const { isDarkTheme } = useSettings();
+  
+  // Privacy Policy state
+  const { isAccepted: isPrivacyAccepted, markAccepted: markPrivacyAccepted } = usePrivacyPolicyStatus();
 
   // Sync clips captured by the background service
   const syncBackgroundClips = useCallback(async () => {
@@ -232,9 +237,18 @@ const AppContent: React.FC = () => {
 
   return (
     <div className={`w-full h-[100dvh] overflow-hidden flex flex-col font-sans transition-colors duration-500 ${isDarkTheme ? 'bg-zinc-950' : 'bg-blue-50'}`}>
-      <div key={currentScreen} className="w-full h-full animate-fade-in">
+      {/* Main content area - leaves room for banner ad at bottom */}
+      <div key={currentScreen} className="w-full flex-1 animate-fade-in overflow-hidden" style={{ paddingBottom: '50px' }}>
           {renderScreen()}
       </div>
+      
+      {/* Start.io Banner Ad at bottom */}
+      <StartIOBannerAd />
+      
+      {/* Privacy Policy Overlay - shown on first launch */}
+      {isPrivacyAccepted === false && (
+        <PrivacyPolicyOverlay onAccept={markPrivacyAccepted} />
+      )}
     </div>
   );
 };

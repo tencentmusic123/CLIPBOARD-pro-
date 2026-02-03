@@ -5,11 +5,9 @@ import SideBar from '../components/SideBar';
 import { clipboardRepository } from '../../data/repository/ClipboardRepository';
 import { ClipboardItem, ScreenName, ClipboardType, SortOption, SortDirection } from '../../types';
 import { useSettings } from '../context/SettingsContext';
-import JSZip from 'jszip';
 import { Clipboard } from '@capacitor/clipboard';
 import { detectSmartItems, detectPrimaryType, maskContent } from '../../util/SmartRecognition';
 import { Share } from '@capacitor/share';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { ClipboardMonitor, ClipboardChangedEvent, PendingClip } from '../../util/plugins/ClipboardMonitor';
 
@@ -59,7 +57,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [showPermissionModal, setShowPermissionModal] = useState(false);
 
   // --- STATE: Hashtag Overlay ---
   const [showHashtagOverlay, setShowHashtagOverlay] = useState(false);
@@ -92,12 +89,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
   }, [sortOption, sortDirection]);
 
   // --- CLIPBOARD SYNC LOGIC ---
+  // Clipboard access is automatically allowed on Android - no permission modal needed
   useEffect(() => {
+    // Auto-enable clipboard sync on mount if not already enabled
     if (!clipboardSyncEnabled) {
-      const t = setTimeout(() => setShowPermissionModal(true), 1500);
-      return () => clearTimeout(t);
+      setClipboardSyncEnabled(true);
     }
-  }, [clipboardSyncEnabled]);
+  }, [clipboardSyncEnabled, setClipboardSyncEnabled]);
 
   const checkSystemClipboard = async () => {
     try {
@@ -134,19 +132,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
     } catch (err) {
       console.warn("Manual sync failed: " + (err instanceof Error ? err.message : String(err)));
     }
-  };
-
-  const handleGrantPermission = async () => {
-      try {
-          await Clipboard.read(); 
-          setClipboardSyncEnabled(true);
-          setShowPermissionModal(false);
-          checkSystemClipboard();
-          showToast("Clipboard Access Granted");
-      } catch (err: any) {
-          console.error("Permission request failed", err);
-          showToast("Clipboard access blocked by browser.");
-      }
   };
 
   const showToast = (msg: string) => {
@@ -496,105 +481,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
       fetchData();
   };
 
-  const handleExport = async () => {
-      const selectedItems = items.filter(i => selectedIds.has(i.id));
-      if (selectedItems.length === 0) return;
-
-      try {
-          if (Capacitor.isNativePlatform()) {
-              // --- NATIVE EXPORT (Android/iOS) ---
-              // Use Cache directory which is always writable without permissions
-              let fileUri = '';
-              let fileName = '';
-
-              if (selectedItems.length === 1) {
-                  const item = selectedItems[0];
-                  fileName = (item.title ? item.title.replace(/[^a-z0-9_\-\. ]/gi, '') : `Clip`) + '.txt';
-                  
-                  await Filesystem.writeFile({
-                      path: fileName,
-                      data: item.content,
-                      directory: Directory.Cache, 
-                      encoding: Encoding.UTF8
-                  });
-                  
-                  const result = await Filesystem.getUri({ 
-                      directory: Directory.Cache, 
-                      path: fileName 
-                  });
-                  fileUri = result.uri;
-              } else {
-                  const zip = new JSZip();
-                  selectedItems.forEach((item, index) => {
-                      const safeTitle = item.title ? item.title.replace(/[^a-z0-9_\-\. ]/gi, '') : `Clip`;
-                      zip.file(`${safeTitle}_${index + 1}.txt`, item.content);
-                  });
-                  
-                  const content = await zip.generateAsync({ type: 'base64' });
-                  fileName = `Export_${Date.now()}.zip`;
-                  
-                  await Filesystem.writeFile({
-                      path: fileName,
-                      data: content,
-                      directory: Directory.Cache
-                  });
-                  
-                  const result = await Filesystem.getUri({ 
-                      directory: Directory.Cache, 
-                      path: fileName 
-                  });
-                  fileUri = result.uri;
-              }
-
-              // Share the file from Cache. User can "Save to Files" from the share sheet.
-              await Share.share({
-                  title: 'Export Clips',
-                  files: [fileUri], 
-              });
-              
-              showToast("Opened Share Sheet");
-
-          } else {
-              // --- WEB EXPORT (Browser) ---
-              if (selectedItems.length === 1) {
-                  const item = selectedItems[0];
-                  const filename = (item.title ? item.title.replace(/[^a-z0-9_\-\. ]/gi, '') : `Clip`) + '.txt';
-                  const blob = new Blob([item.content], { type: 'text/plain' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = filename;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                  URL.revokeObjectURL(url);
-              } else {
-                  const zip = new JSZip();
-                  selectedItems.forEach((item, index) => {
-                      const safeTitle = item.title ? item.title.replace(/[^a-z0-9_\-\. ]/gi, '') : `Clip`;
-                      zip.file(`${safeTitle}_${index + 1}.txt`, item.content);
-                  });
-                  const content = await zip.generateAsync({ type: 'blob' });
-                  const url = URL.createObjectURL(content);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `Export_${Date.now()}.zip`;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                  URL.revokeObjectURL(url);
-              }
-              showToast("Export downloaded");
-          }
-      } catch (e) {
-          console.error("Export failed", e);
-          showToast("Export failed");
-      }
-
-      setShowMoreMenu(false);
-      exitSelectionMode();
-  };
-
   // --- HASHTAG OVERLAY LOGIC ---
   const handleAddHashtagStart = async () => {
       setShowMoreMenu(false);
@@ -779,7 +665,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
                   <MenuItem label="Copy" onClick={handleBulkCopy} />
                   <MenuItem label="Merge" onClick={handleMerge} />
                   <MenuItem label="Share" onClick={handleShare} />
-                  <MenuItem label="Export" onClick={handleExport} />
                   <MenuItem label={`Copy to ${activeTab === 'clipboard' ? 'Notes' : 'Clipboard'}`} onClick={handleCopyToNotes} />
                   <MenuItem label={items.filter(i => selectedIds.has(i.id)).some(i => !i.isPinned) ? "Pin" : "Unpin"} onClick={handleBulkPin} />
                   <MenuItem label="Add Hashtag" onClick={handleAddHashtagStart} />
@@ -843,28 +728,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onRead, onCreateNew
               <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-700 text-white px-6 py-3 rounded-full shadow-2xl flex items-center space-x-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
                   <span className="text-xs font-bold tracking-widest uppercase">{toastMessage}</span>
-              </div>
-          </div>
-      )}
-
-      {showPermissionModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-              <div className={`border rounded-2xl p-6 w-full max-w-sm shadow-2xl ${isDarkTheme ? 'bg-black border-zinc-700' : 'bg-white border-zinc-400'}`} style={{ borderColor: accentColor }}>
-                   <div className="flex flex-col items-center text-center mb-6">
-                       <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: `${accentColor}20` }}>
-                           <svg className="w-8 h-8" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                           </svg>
-                       </div>
-                       <h3 className={`text-xl font-bold mb-2 uppercase tracking-widest ${textColor}`}>Clipboard Sync</h3>
-                       <p className={`text-sm leading-relaxed opacity-80 ${textColor}`}>
-                           To automatically manage and sync your history, Clipboard Max requires permission to access your system clipboard.
-                       </p>
-                   </div>
-                   <div className="flex space-x-4">
-                       <button onClick={() => setShowPermissionModal(false)} className={`flex-1 py-3 rounded-xl font-medium text-sm transition-colors ${isDarkTheme ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-black'}`}>Not Now</button>
-                       <button onClick={handleGrantPermission} className="flex-1 py-3 rounded-xl font-bold text-sm text-black transition-opacity hover:opacity-90" style={{ backgroundColor: accentColor }}>Allow Access</button>
-                   </div>
               </div>
           </div>
       )}

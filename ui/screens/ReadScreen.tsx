@@ -52,7 +52,12 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
               url = `tel:${smartItem.value}`;
               break;
           case 'EMAIL': 
-              url = `mailto:${smartItem.value}`;
+              // Use Gmail compose URL for Android devices, fallback to mailto for others
+              if (/Android/i.test(navigator.userAgent)) {
+                  url = `intent://compose?to=${encodeURIComponent(smartItem.value)}#Intent;scheme=mailto;package=com.google.android.gm;end`;
+              } else {
+                  url = `mailto:${smartItem.value}`;
+              }
               break;
           case 'LINK': 
               url = smartItem.value;
@@ -91,14 +96,6 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
                   await Clipboard.write({ string: currentItem.content }); 
                   showToast("Copied to clipboard");
               }
-              break;
-          case 'EXPORT': 
-              const blob = new Blob([currentItem.content], {type: 'text/plain'});
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `clip_${currentItem.id}.txt`;
-              a.click();
               break;
           case 'TOGGLE_CATEGORY_COPY':
                const targetCategory = currentItem.category === 'clipboard' ? 'notes' : 'clipboard';
@@ -232,7 +229,6 @@ const ReadScreen: React.FC<ReadScreenProps> = ({ item, onBack, onEdit }) => {
                   <MenuBtn label="Copy" onClick={() => handleMenuAction('COPY')} isDark={isDarkTheme} />
                   <MenuBtn label="Edit" onClick={() => handleMenuAction('EDIT')} isDark={isDarkTheme} />
                   <MenuBtn label="Share" onClick={() => handleMenuAction('SHARE')} isDark={isDarkTheme} />
-                  <MenuBtn label="Export" onClick={() => handleMenuAction('EXPORT')} isDark={isDarkTheme} />
                   <MenuBtn 
                     label={currentItem.category === 'clipboard' ? 'Copy to Notes' : 'Copy to Clipboard'} 
                     onClick={() => handleMenuAction('TOGGLE_CATEGORY_COPY')} 

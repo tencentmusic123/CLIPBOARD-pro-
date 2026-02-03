@@ -1,8 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSettings } from '../context/SettingsContext';
-import { clipboardRepository } from '../../data/repository/ClipboardRepository';
-import { Capacitor } from '@capacitor/core';
-import { ClipboardMonitor } from '../../util/plugins/ClipboardMonitor';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -15,91 +12,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
     accentColor, 
     readingFontSize, setReadingFontSize,
     isSmartRecognitionOn, toggleSmartRecognition,
-    isAiSupportOn, toggleAiSupport,
-    backgroundMonitoringEnabled, setBackgroundMonitoringEnabled,
-    autoBackupFrequency, setAutoBackupFrequency,
-    backupDestination, setBackupDestination
+    isAiSupportOn, toggleAiSupport
   } = useSettings();
 
   // --- UI Local State ---
-  const [showBackupFreq, setShowBackupFreq] = useState(false);
-  const [showBackupDest, setShowBackupDest] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
-  
-  // Accessibility Service State
-  const [isAccessibilityEnabled, setIsAccessibilityEnabled] = useState(false);
-  const [isServiceConnected, setIsServiceConnected] = useState(false);
-  
-  // Backup/Restore States
-  const [isBackingUp, setIsBackingUp] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Modal State for Manual Actions
-  const [actionModalType, setActionModalType] = useState<'BACKUP' | 'RESTORE' | null>(null);
-
-  // --- Refs for Click Outside Logic ---
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Check accessibility status on mount and when app becomes visible
-  useEffect(() => {
-    const checkAccessibilityStatus = async () => {
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const status = await ClipboardMonitor.isAccessibilityEnabled();
-          setIsAccessibilityEnabled(status.enabled);
-          setIsServiceConnected(status.serviceConnected);
-          if (status.enabled) {
-            setBackgroundMonitoringEnabled(true);
-          }
-        } catch (e) {
-          console.warn('Error checking accessibility status:', e);
-        }
-      }
-    };
-    
-    checkAccessibilityStatus();
-    
-    // Check again when app becomes visible (user might have enabled it in settings)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkAccessibilityStatus();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [setBackgroundMonitoringEnabled]);
 
   // --- Helpers ---
   const showToast = (msg: string) => {
       setToastMessage(msg);
       setTimeout(() => setToastMessage(null), 3000);
-  };
-
-  const handleAccessibilityToggle = async () => {
-    if (Capacitor.isNativePlatform()) {
-      if (!isAccessibilityEnabled) {
-        // Open accessibility settings to enable service
-        try {
-          await ClipboardMonitor.openAccessibilitySettings();
-          showToast('Enable Clipboard Max in Accessibility settings');
-        } catch (e) {
-          showToast('Could not open Accessibility settings');
-        }
-      } else {
-        // Service is enabled, direct to settings to disable
-        try {
-          await ClipboardMonitor.openAccessibilitySettings();
-          showToast('Disable Clipboard Max in Accessibility settings to stop monitoring');
-        } catch (e) {
-          showToast('Could not open Accessibility settings');
-        }
-      }
-    } else {
-      showToast('Background monitoring is only available on Android');
-    }
   };
 
   const handleFeedbackSubmit = () => {
@@ -109,85 +33,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       window.location.href = `mailto:tencentmusic123@gmail.com?subject=${subject}&body=${body}`;
       setShowFeedbackModal(false);
       setFeedbackText('');
-  };
-
-  // Logic for Auto Backup Destination Setting
-  const handleBackupDestinationSelect = (dest: string) => {
-      setBackupDestination(dest);
-      setShowBackupDest(false);
-  };
-
-  // Logic for Manual Actions (Popup Flow)
-  const handleManualActionStart = (type: 'BACKUP' | 'RESTORE') => {
-      if (isBackingUp || isRestoring) return;
-      setActionModalType(type);
-  };
-
-  const handleDestinationConfirm = async (destination: 'Local') => {
-      // Close Modal immediately
-      setActionModalType(null);
-
-      // --- LOCAL STORAGE ACTION ---
-      if (actionModalType === 'BACKUP') {
-          try {
-              const data = await clipboardRepository.exportData();
-              const blob = new Blob([data], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              
-              // Trigger Download
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `clipboard_max_backup_${new Date().toISOString().slice(0, 10)}.json`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-              
-              showToast("Backup downloaded successfully");
-          } catch (e) {
-              showToast("Backup generation failed");
-              console.error(e);
-          }
-      } else if (actionModalType === 'RESTORE') {
-          // Trigger File Picker
-          if (fileInputRef.current) {
-              fileInputRef.current.click();
-          }
-      }
-  };
-
-  const handleFileRestore = async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      
-      setIsRestoring(true);
-      
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-          try {
-              const content = e.target?.result as string;
-              const success = await clipboardRepository.importData(content);
-              
-              if (success) {
-                  showToast("Data restored successfully");
-              } else {
-                  showToast("Failed to restore: Invalid file format");
-              }
-          } catch (err) {
-              console.error(err);
-              showToast("Error parsing backup file");
-          } finally {
-              setIsRestoring(false);
-              // Reset file input
-              if (fileInputRef.current) fileInputRef.current.value = '';
-          }
-      };
-      reader.onerror = () => {
-          setIsRestoring(false);
-          showToast("Error reading file");
-          if (fileInputRef.current) fileInputRef.current.value = '';
-      };
-      reader.readAsText(file);
   };
 
   // --- Styles & Classes ---
@@ -200,15 +45,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
   return (
     <div className={containerClass}>
-      
-      {/* Hidden File Input for Restore */}
-      <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
-          accept=".json" 
-          onChange={handleFileRestore} 
-      />
 
       {/* --- HEADER --- */}
       <header className={headerClass}>
@@ -291,122 +127,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
               />
           </div>
 
-          {/* --- BACKGROUND MONITORING --- */}
-          <h3 className={sectionTitleClass}>Background Monitoring</h3>
-          <div className={cardClass}>
-              <div className={`${itemClass} rounded-2xl`}>
-                 <div className="flex items-center space-x-3">
-                    <div className={`p-1.5 rounded-lg ${isDarkTheme ? 'bg-zinc-800 text-white' : 'bg-gray-100 text-black'}`}>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-base font-medium">Accessibility Service</span>
-                        <span className={`text-xs ${isDarkTheme ? 'text-zinc-500' : 'text-gray-500'}`}>
-                            {isAccessibilityEnabled 
-                                ? (isServiceConnected ? 'Active — Monitoring clipboard' : 'Enabled — Connecting...') 
-                                : 'Disabled — Tap to enable'}
-                        </span>
-                    </div>
-                 </div>
-                 <button 
-                    onClick={handleAccessibilityToggle}
-                    className={`w-11 h-6 rounded-full relative transition-colors duration-200 focus:outline-none`}
-                    style={{ backgroundColor: isAccessibilityEnabled ? accentColor : (isDarkTheme ? '#333' : '#e5e7eb') }}
-                 >
-                    <div 
-                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 shadow-sm ${isAccessibilityEnabled ? 'left-6' : 'left-1'}`}
-                    />
-                 </button>
-              </div>
-              {!Capacitor.isNativePlatform() && (
-                  <div className={`px-4 py-2 text-xs ${isDarkTheme ? 'text-zinc-500' : 'text-gray-500'}`}>
-                      Background monitoring requires the Android app. Build the APK to use this feature.
-                  </div>
-              )}
-          </div>
-
-          {/* --- BACKUP & DATA --- */}
-          <h3 className={sectionTitleClass}>Backup & Data</h3>
-          <div className={cardClass}>
-               {/* Manual Action Buttons Row */}
-               <div className="flex items-center p-2 rounded-t-2xl">
-                   <button 
-                       onClick={() => handleManualActionStart('BACKUP')}
-                       disabled={isBackingUp || isRestoring}
-                       className={`flex-1 py-3 text-sm font-medium rounded-xl transition-all ${isDarkTheme ? 'text-white hover:bg-zinc-800 active:bg-zinc-700' : 'text-black hover:bg-gray-100 active:bg-gray-200'}`}
-                       style={{ color: accentColor }}
-                   >
-                       {isBackingUp ? 'Backing up...' : 'Backup Now'}
-                   </button>
-                   <div className={`w-[1px] h-6 ${isDarkTheme ? 'bg-zinc-800' : 'bg-gray-200'}`}></div>
-                   <button 
-                       onClick={() => handleManualActionStart('RESTORE')}
-                       disabled={isBackingUp || isRestoring}
-                       className={`flex-1 py-3 text-sm font-medium rounded-xl transition-all ${isDarkTheme ? 'text-white hover:bg-zinc-800 active:bg-zinc-700' : 'text-black hover:bg-gray-100 active:bg-gray-200'}`}
-                   >
-                       {isRestoring ? 'Restoring...' : 'Restore Now'}
-                   </button>
-               </div>
-
-               <div className={dividerClass}></div>
-
-               {/* Combined Auto Backup & Destination Row */}
-               <div className={`${itemClass} rounded-b-2xl`}>
-                   <div className="flex items-center space-x-3">
-                       <div className={`p-1.5 rounded-lg ${isDarkTheme ? 'bg-zinc-800 text-white' : 'bg-gray-100 text-black'}`}>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                       </div>
-                       <span className="text-base font-medium">Auto Backup</span>
-                   </div>
-                   
-                   <div className="flex items-center space-x-2">
-                       {/* Frequency Trigger */}
-                       <div className="relative">
-                           <button 
-                                onClick={(e) => { e.stopPropagation(); setShowBackupFreq(!showBackupFreq); setShowBackupDest(false); }}
-                                className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${isDarkTheme ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                           >
-                               {autoBackupFrequency}
-                           </button>
-                           {/* Frequency Dropdown */}
-                           {showBackupFreq && (
-                                <div className={`absolute top-full right-0 mt-2 z-30 w-40 rounded-xl shadow-xl border overflow-hidden ${isDarkTheme ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-400'}`}>
-                                    {['Off', 'Every Day', 'Every 15 days', 'Every Month'].map(opt => (
-                                        <button 
-                                            key={opt}
-                                            onClick={(e) => { e.stopPropagation(); setAutoBackupFrequency(opt); setShowBackupFreq(false); }}
-                                            className={`w-full text-left px-4 py-3 text-sm hover:opacity-80 ${isDarkTheme ? 'text-white hover:bg-zinc-800' : 'text-black hover:bg-gray-100'} ${autoBackupFrequency === opt ? (isDarkTheme ? 'bg-zinc-800' : 'bg-gray-100') : ''}`}
-                                        >
-                                            {opt}
-                                        </button>
-                                    ))}
-                                </div>
-                           )}
-                       </div>
-
-                       {/* Destination Trigger */}
-                       <div className="relative">
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); setShowBackupDest(!showBackupDest); setShowBackupFreq(false); }}
-                                className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors flex items-center space-x-1 ${isDarkTheme ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                            >
-                                <span className="max-w-[80px] truncate">{backupDestination === 'Google' ? 'Local files' : backupDestination}</span>
-                            </button>
-                             {/* Destination Dropdown */}
-                           {showBackupDest && (
-                                <div className={`absolute top-full right-0 mt-2 z-30 w-48 rounded-xl shadow-xl border overflow-hidden ${isDarkTheme ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-400'}`}>
-                                     <button onClick={(e) => { e.stopPropagation(); handleBackupDestinationSelect('Local files'); }} className={`w-full text-left px-4 py-3 text-sm hover:opacity-80 ${isDarkTheme ? 'text-white hover:bg-zinc-800' : 'text-black hover:bg-gray-100'}`}>
-                                         Local Files
-                                     </button>
-                                </div>
-                           )}
-                       </div>
-                   </div>
-               </div>
-          </div>
-
           {/* --- SUPPORT --- */}
           <h3 className={sectionTitleClass}>Support</h3>
           <div className={cardClass}>
@@ -448,40 +168,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
               <div className="bg-zinc-900 border border-zinc-700 text-white px-6 py-3 rounded-full shadow-2xl flex items-center space-x-2">
                   <div className="w-2 h-2 rounded-full bg-green-500"></div>
                   <span className="text-sm font-medium tracking-wide">{toastMessage}</span>
-              </div>
-          </div>
-      )}
-
-      {/* --- ACTION DESTINATION MODAL --- */}
-      {actionModalType && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-              <div 
-                  className={`border rounded-2xl p-6 w-full max-w-sm shadow-2xl flex flex-col ${isDarkTheme ? 'bg-black border-zinc-700 text-white' : 'bg-white border-zinc-400 text-black'}`}
-                  style={{ borderColor: accentColor }}
-              >
-                  <h3 className="text-xl text-center mb-6 font-medium tracking-wide">
-                      {actionModalType === 'BACKUP' ? 'Backup Destination' : 'Restore Source'}
-                  </h3>
-                  
-                  <div className="space-y-3">
-                      <button 
-                          onClick={() => handleDestinationConfirm('Local')}
-                          className={`w-full flex items-center p-4 rounded-xl border transition-all ${isDarkTheme ? 'hover:bg-zinc-900 border-zinc-800' : 'hover:bg-gray-50 border-zinc-400'}`}
-                      >
-                           <svg className="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
-                          <div className="text-left">
-                              <div className="font-medium text-base">Local Storage</div>
-                              <div className={`text-xs ${isDarkTheme ? 'text-zinc-400' : 'text-zinc-600'}`}>Device Internal Storage</div>
-                          </div>
-                      </button>
-                  </div>
-
-                  <button 
-                      onClick={() => setActionModalType(null)}
-                      className={`mt-6 w-full py-3 text-center text-sm uppercase tracking-wider font-medium hover:opacity-100 transition-opacity ${isDarkTheme ? 'text-zinc-500 hover:text-white' : 'text-zinc-600 hover:text-black'}`}
-                  >
-                      Cancel
-                  </button>
               </div>
           </div>
       )}
